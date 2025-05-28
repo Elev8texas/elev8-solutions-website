@@ -26,6 +26,18 @@ service cloud.firestore {
       allow read, update, delete: if false; // Only backend functions can read/modify
     }
     
+    // Allow public writes to Emails collection (for popup email collection)
+    match /Emails/{document} {
+      allow create: if true; // Anyone can submit emails
+      allow read, update, delete: if false; // Only backend functions can read/modify
+    }
+    
+    // Allow public writes to client-profiles collection (for organized client data)
+    match /client-profiles/{document} {
+      allow create: if true; // Anyone can create client profiles
+      allow read, update, delete: if false; // Only backend functions can read/modify
+    }
+    
     // Deny all other operations by default
     match /{document=**} {
       allow read, write: if false;

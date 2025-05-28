@@ -19,6 +19,83 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Function to send email notification when new email is collected
+export const sendEmailNotification = functions.firestore
+  .document('Emails/{emailId}')
+  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
+    const emailData = snap.data();
+    const emailId = context.params.emailId;
+
+    try {
+      // Email to business
+      const businessMailOptions = {
+        from: gmailEmail,
+        to: businessEmail,
+        subject: `New Email Subscription - ${emailData.source}`,
+        html: `
+          <h2>New Email Subscription</h2>
+          <p><strong>Email ID:</strong> ${emailId}</p>
+          <p><strong>Email:</strong> ${emailData.email}</p>
+          <p><strong>Source:</strong> ${emailData.source}</p>
+          <p><strong>Status:</strong> ${emailData.status}</p>
+          <p><strong>Submitted:</strong> ${emailData.timestamp.toDate()}</p>
+          
+          <hr>
+          <p><em>This is an automated notification from your Elev8 website.</em></p>
+        `,
+      };
+
+      await transporter.sendMail(businessMailOptions);
+      console.log(`Email notification sent for ${emailId}`);
+
+    } catch (error) {
+      console.error('Error sending email notification:', error);
+    }
+  });
+
+// Function to send email notification when new client profile is created
+export const sendClientProfileNotification = functions.firestore
+  .document('client-profiles/{profileId}')
+  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
+    const profileData = snap.data();
+    const profileId = context.params.profileId;
+
+    try {
+      // Email to business
+      const businessMailOptions = {
+        from: gmailEmail,
+        to: businessEmail,
+        subject: `New Client Profile - ${profileData.name}`,
+        html: `
+          <h2>New Client Profile Created</h2>
+          <p><strong>Profile ID:</strong> ${profileId}</p>
+          <p><strong>Name:</strong> ${profileData.name}</p>
+          <p><strong>Email:</strong> ${profileData.email}</p>
+          <p><strong>Phone:</strong> ${profileData.phone || 'Not provided'}</p>
+          <p><strong>Address:</strong> ${profileData.address || 'Not provided'}</p>
+          <p><strong>Service Inquired:</strong> ${profileData.serviceInquired}</p>
+          <p><strong>Source:</strong> ${profileData.source}</p>
+          <p><strong>Status:</strong> ${profileData.status}</p>
+          <p><strong>Submitted:</strong> ${profileData.timestamp.toDate()}</p>
+          
+          ${profileData.additionalInfo ? `
+          <h3>Additional Information:</h3>
+          <pre>${JSON.stringify(profileData.additionalInfo, null, 2)}</pre>
+          ` : ''}
+          
+          <hr>
+          <p><em>This is an automated notification from your Elev8 website.</em></p>
+        `,
+      };
+
+      await transporter.sendMail(businessMailOptions);
+      console.log(`Client profile notification sent for ${profileId}`);
+
+    } catch (error) {
+      console.error('Error sending client profile notification:', error);
+    }
+  });
+
 // Function to send email notification when new contact is created
 export const sendContactNotification = functions.firestore
   .document('contacts/{contactId}')
@@ -96,14 +173,7 @@ export const sendContactNotification = functions.firestore
       });
 
     } catch (error) {
-      console.error('Error sending email notifications:', error);
-      
-      // Update the contact document to mark email failure
-      await snap.ref.update({
-        emailsSent: false,
-        emailError: error instanceof Error ? error.message : 'Unknown error',
-        emailErrorAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      console.error('Error sending contact notification:', error);
     }
   });
 

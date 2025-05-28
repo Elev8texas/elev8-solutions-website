@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { saveEmail } from '../services/firebase';
 
 interface NewsletterPopupProps {
   onClose: () => void;
@@ -9,20 +10,19 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     
-    // Simulate API call - replace with actual newsletter signup logic
     try {
-      // TODO: Replace with actual newsletter signup API
-      console.log('Newsletter signup:', email);
-      
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Save email to Firebase Emails collection
+      const docId = await saveEmail(email, 'newsletter-popup');
+      console.log('Newsletter email saved with ID:', docId);
       
       setIsSubmitted(true);
       
@@ -33,6 +33,7 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
       
     } catch (error) {
       console.error('Newsletter signup error:', error);
+      setSubmitError('There was an error subscribing to our newsletter. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -60,7 +61,7 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-gold-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-gold-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-text-primary mb-2">
@@ -83,6 +84,13 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
                     required
                   />
                 </div>
+                
+                {/* Error Message */}
+                {submitError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-sm">{submitError}</p>
+                  </div>
+                )}
                 
                 <button
                   type="submit"

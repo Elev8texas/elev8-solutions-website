@@ -38,9 +38,64 @@ export interface QuoteFormData {
   additionalDetails?: string;
 }
 
-// Save contact form data to Firestore
+// New types for organized data structure
+export interface EmailData {
+  email: string;
+  source: string;
+  timestamp: any;
+  status: string;
+}
+
+export interface ClientProfileData {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  serviceInquired: string;
+  source: string;
+  timestamp?: any;
+  status: string;
+  additionalInfo?: any;
+}
+
+// Save email only (for popups, newsletter signups, etc.)
+export const saveEmail = async (email: string, source: string = 'popup') => {
+  try {
+    const emailData: EmailData = {
+      email,
+      source,
+      timestamp: Timestamp.now(),
+      status: 'new'
+    };
+    
+    const docRef = await addDoc(collection(db, 'Emails'), emailData);
+    console.log('Email saved with ID: ', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving email:', error);
+    throw error;
+  }
+};
+
+// Save full client profile
+export const saveClientProfile = async (profileData: ClientProfileData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'client-profiles'), {
+      ...profileData,
+      timestamp: Timestamp.now()
+    });
+    console.log('Client profile saved with ID: ', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving client profile:', error);
+    throw error;
+  }
+};
+
+// Save contact form data to Firestore (updated to also save client profile)
 export const saveContactForm = async (formData: ContactFormData) => {
   try {
+    // Save to original contacts collection for backward compatibility
     const docRef = await addDoc(collection(db, 'contacts'), {
       ...formData,
       timestamp: Timestamp.now(),
@@ -48,6 +103,23 @@ export const saveContactForm = async (formData: ContactFormData) => {
       source: formData.source || 'website'
     });
     console.log('Contact saved with ID: ', docRef.id);
+
+    // Also save to Client Profiles collection
+    const clientProfile: ClientProfileData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      serviceInquired: formData.service,
+      source: formData.source || 'contact-form',
+      status: 'new',
+      additionalInfo: {
+        message: formData.message,
+        urgency: formData.urgency
+      }
+    };
+    
+    await saveClientProfile(clientProfile);
+    
     return docRef.id;
   } catch (error) {
     console.error('Error saving contact:', error);
@@ -55,9 +127,10 @@ export const saveContactForm = async (formData: ContactFormData) => {
   }
 };
 
-// Save quote request data to Firestore
+// Save quote request data to Firestore (updated to also save client profile)
 export const saveQuoteRequest = async (formData: QuoteFormData) => {
   try {
+    // Save to original quotes collection for backward compatibility
     const docRef = await addDoc(collection(db, 'quotes'), {
       ...formData,
       timestamp: Timestamp.now(),
@@ -66,6 +139,27 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
       followUpDate: null
     });
     console.log('Quote request saved with ID: ', docRef.id);
+
+    // Also save to Client Profiles collection
+    const clientProfile: ClientProfileData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      serviceInquired: formData.services.join(', '),
+      source: 'quote-form',
+      status: 'pending',
+      additionalInfo: {
+        services: formData.services,
+        propertyType: formData.propertyType,
+        squareFootage: formData.squareFootage,
+        windowCount: formData.windowCount,
+        additionalDetails: formData.additionalDetails
+      }
+    };
+    
+    await saveClientProfile(clientProfile);
+
     return docRef.id;
   } catch (error) {
     console.error('Error saving quote request:', error);
@@ -73,9 +167,10 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
   }
 };
 
-// Save bundle selection data
+// Save bundle selection data (updated to also save client profile)
 export const saveBundleSelection = async (bundleName: string, customerInfo: any) => {
   try {
+    // Save to original collection for backward compatibility
     const docRef = await addDoc(collection(db, 'bundle-selections'), {
       bundleName,
       customerInfo,
@@ -83,6 +178,26 @@ export const saveBundleSelection = async (bundleName: string, customerInfo: any)
       status: 'new'
     });
     console.log('Bundle selection saved with ID: ', docRef.id);
+
+    // Also save to Client Profiles collection if customer info is provided
+    if (customerInfo.email) {
+      const clientProfile: ClientProfileData = {
+        name: customerInfo.name || 'Bundle Customer',
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        address: customerInfo.address,
+        serviceInquired: bundleName,
+        source: 'bundle-selection',
+        status: 'new',
+        additionalInfo: {
+          bundleName,
+          ...customerInfo
+        }
+      };
+      
+      await saveClientProfile(clientProfile);
+    }
+
     return docRef.id;
   } catch (error) {
     console.error('Error saving bundle selection:', error);
@@ -90,9 +205,10 @@ export const saveBundleSelection = async (bundleName: string, customerInfo: any)
   }
 };
 
-// Save service booking data
+// Save service booking data (updated to also save client profile)
 export const saveServiceBooking = async (serviceName: string, customerInfo: any) => {
   try {
+    // Save to original collection for backward compatibility
     const docRef = await addDoc(collection(db, 'service-bookings'), {
       serviceName,
       customerInfo,
@@ -100,6 +216,26 @@ export const saveServiceBooking = async (serviceName: string, customerInfo: any)
       status: 'new'
     });
     console.log('Service booking saved with ID: ', docRef.id);
+
+    // Also save to Client Profiles collection if customer info is provided
+    if (customerInfo.email) {
+      const clientProfile: ClientProfileData = {
+        name: customerInfo.name || 'Service Customer',
+        email: customerInfo.email,
+        phone: customerInfo.phone,
+        address: customerInfo.address,
+        serviceInquired: serviceName,
+        source: 'service-booking',
+        status: 'new',
+        additionalInfo: {
+          serviceName,
+          ...customerInfo
+        }
+      };
+      
+      await saveClientProfile(clientProfile);
+    }
+
     return docRef.id;
   } catch (error) {
     console.error('Error saving service booking:', error);
