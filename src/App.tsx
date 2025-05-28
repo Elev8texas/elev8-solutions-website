@@ -1,25 +1,94 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navigation from './components/Navigation';
+import HeroSection from './components/HeroSection';
+import ServicesSection from './components/ServicesSection';
+import BundleSection from './components/BundleSection';
+import ReviewsSection from './components/ReviewsSection';
+import GallerySection from './components/GallerySection';
+import ContactCallToAction from './components/ContactCallToAction';
+import FullGallery from './components/FullGallery';
+import Commercial from './pages/Commercial';
+import Services from './pages/Services';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import ContactForm from './pages/ContactForm';
+import Quote from './pages/Quote';
+import Footer from './components/Footer';
+import StickyHelpButton from './components/StickyHelpButton';
+import NewsletterPopup from './components/NewsletterPopup';
+
+function HomePage() {
+  return (
+    <>
+      <HeroSection />
+      <ServicesSection />
+      <BundleSection />
+      <ReviewsSection />
+      <GallerySection />
+      <ContactCallToAction />
+    </>
+  );
+}
 
 function App() {
+  const [showNewsletterPopup, setShowNewsletterPopup] = React.useState(false);
+  const [hasShownPopup, setHasShownPopup] = React.useState(false);
+
+  React.useEffect(() => {
+    // Check if popup has been shown before (localStorage)
+    const hasSeenNewsletter = localStorage.getItem('elev8-newsletter-shown');
+    
+    if (!hasSeenNewsletter && !hasShownPopup) {
+      const timer = setTimeout(() => {
+        setShowNewsletterPopup(true);
+        setHasShownPopup(true);
+        localStorage.setItem('elev8-newsletter-shown', 'true');
+      }, 30000); // 30 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasShownPopup]);
+
+  const handleCloseNewsletter = () => {
+    setShowNewsletterPopup(false);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="min-h-screen bg-background-primary">
+        <Routes>
+          <Route path="/" element={
+            <>
+              <Navigation />
+              <HomePage />
+              <Footer />
+              <StickyHelpButton />
+            </>
+          } />
+          <Route path="/gallery" element={
+            <>
+              <Navigation />
+              <FullGallery />
+              <Footer />
+              <StickyHelpButton />
+            </>
+          } />
+          <Route path="/commercial" element={<Commercial />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/help" element={<ContactForm />} />
+          <Route path="/quote" element={<Quote />} />
+        </Routes>
+        
+        {/* Newsletter Popup */}
+        <NewsletterPopup 
+          isVisible={showNewsletterPopup} 
+          onClose={handleCloseNewsletter} 
+        />
+      </div>
+    </Router>
   );
 }
 

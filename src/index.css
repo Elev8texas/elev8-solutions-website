@@ -1,13 +1,136 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    font-family: 'Roboto', 'Inter', 'Outfit', 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: #0D0D0D;
+    color: #F5F5F5;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  }
+
+  /* Custom CSS variables for easy theme switching */
+  :root {
+    --bg-primary: #0D0D0D;
+    --bg-secondary: #111111;
+    --bg-card: #1A1A1A;
+    --text-primary: #F5F5F5;
+    --text-secondary: #E0E0E0;
+    --gold-primary: #D4AF37;
+    --gold-bright: #FFD700;
+    --gold-medium: #C5A059;
+    --border-soft: #2C2C2C;
+    --border-gold: #B89B31;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer components {
+  /* Primary Gold Button - Luxurious with gradient */
+  .btn-primary {
+    @apply bg-gold-gradient hover:bg-gold-gradient-hover text-background-primary font-semibold py-3 px-8 rounded-lg transition-all duration-300 shadow-luxe hover:shadow-gold-glow transform hover:-translate-y-0.5;
+  }
+  
+  /* Secondary Gold Button - Elegant outline */
+  .btn-secondary {
+    @apply bg-transparent border-2 border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-background-primary font-semibold py-3 px-8 rounded-lg transition-all duration-300 hover:shadow-gold;
+  }
+
+  /* Luxury CTA Button - For hero sections */
+  .btn-luxury {
+    @apply bg-background-primary border-2 border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-background-primary font-semibold py-4 px-10 rounded-lg transition-all duration-300 hover:shadow-gold-glow transform hover:-translate-y-1;
+  }
+
+  /* Glass Card - Elevated glassmorphism effect */
+  .card-glass {
+    @apply bg-background-card/80 backdrop-blur-sm border border-border-primary rounded-xl shadow-glass;
+  }
+
+  /* Navigation Link - Gold underline on hover */
+  .nav-link {
+    @apply text-text-secondary hover:text-text-primary transition-all duration-300 relative;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: -4px;
+    left: 0;
+    background: linear-gradient(90deg, #C5A059, #FFD700);
+    transition: width 0.3s ease;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    width: 100%;
+  }
+
+  /* Section with gold divider */
+  .section-divider {
+    @apply border-t border-border-gold/30;
+  }
+
+  /* Icon with gold accent */
+  .icon-gold {
+    @apply text-gold-500 hover:text-gold-400 transition-colors duration-300;
+  }
+
+  /* Prestigious header text */
+  .text-luxury {
+    @apply font-serif text-text-primary;
+  }
+
+  /* Gold glow text effect */
+  .text-gold-glow {
+    @apply text-gold-500;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:transform hover:-translate-y-1 hover:shadow-gold;
+  }
+
+  /* Input field styling */
+  .input-luxury {
+    @apply bg-background-card border border-border-primary text-text-primary placeholder-text-muted rounded-lg px-4 py-3 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 focus:outline-none transition-all duration-300;
+  }
+
+  /* Header/Footer dark background */
+  .bg-header {
+    @apply bg-background-primary border-b border-border-primary;
+  }
+
+  .bg-footer {
+    @apply bg-background-primary border-t border-border-primary;
+  }
+} 
+
+/* Custom animations */
+@keyframes goldPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 2s ease-in-out infinite;
 }
