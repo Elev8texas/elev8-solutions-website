@@ -101,7 +101,15 @@ export const saveClientProfile = async (profileData: ClientProfileData) => {
 
 // Save contact form data to Firestore (updated to also save client profile)
 export const saveContactForm = async (formData: ContactFormData) => {
+  console.log('🔥 Starting contact form save...', formData);
+  
   try {
+    // Check if Firebase is properly initialized
+    if (!db) {
+      throw new Error('Firebase database not initialized');
+    }
+    
+    console.log('📝 Saving to contacts collection...');
     // Save to original contacts collection for backward compatibility
     const docRef = await addDoc(collection(db, 'contacts'), {
       ...formData,
@@ -109,8 +117,9 @@ export const saveContactForm = async (formData: ContactFormData) => {
       status: 'new',
       source: formData.source || 'website'
     });
-    console.log('Contact saved with ID: ', docRef.id);
+    console.log('✅ Contact saved with ID: ', docRef.id);
 
+    console.log('👤 Creating client profile...');
     // Also save to Client Profiles collection
     const clientProfile: ClientProfileData = {
       name: formData.name,
@@ -126,10 +135,17 @@ export const saveContactForm = async (formData: ContactFormData) => {
     };
     
     await saveClientProfile(clientProfile);
+    console.log('✅ Contact form submission completed successfully');
     
     return docRef.id;
   } catch (error) {
-    console.error('Error saving contact:', error);
+    console.error('❌ Error saving contact:', error);
+    console.error('Error details:', {
+      name: (error as any)?.name,
+      message: (error as any)?.message,
+      code: (error as any)?.code,
+      stack: (error as any)?.stack
+    });
     throw error;
   }
 };

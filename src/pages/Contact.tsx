@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
 import { Link, useLocation } from 'react-router-dom';
 import { saveContactForm, ContactFormData } from '../services/firebase';
+import { checkFirebaseConfig } from '../utils/firebaseCheck';
 
 const Contact: React.FC = () => {
   const location = useLocation();

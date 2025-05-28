@@ -26,6 +26,12 @@ service cloud.firestore {
       allow read, update, delete: if false; // Only backend functions can read/modify
     }
     
+    // Allow public writes to commercial inquiries
+    match /commercial-inquiries/{document} {
+      allow create: if true; // Anyone can submit commercial inquiries
+      allow read, update, delete: if false; // Only backend functions can read/modify
+    }
+    
     // Allow public writes to Emails collection (for popup email collection)
     match /Emails/{document} {
       allow create: if true; // Anyone can submit emails
