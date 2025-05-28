@@ -2,14 +2,18 @@ import React, { useState } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
+import { saveCommercialForm, CommercialFormData } from '../services/firebase';
 
 const Commercial: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CommercialFormData>({
     businessName: '',
     contactName: '',
     phoneNumber: '',
     businessAddress: ''
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -19,11 +23,27 @@ const Commercial: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Commercial form submitted:', formData);
-    // You can add form submission logic here
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      await saveCommercialForm(formData);
+      setSubmitStatus('success');
+      // Reset form
+      setFormData({
+        businessName: '',
+        contactName: '',
+        phoneNumber: '',
+        businessAddress: ''
+      });
+    } catch (error) {
+      console.error('Error submitting commercial form:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -87,6 +107,22 @@ const Commercial: React.FC = () => {
                   Get Your Free Commercial Quote
                 </h2>
                 
+                {submitStatus === 'success' && (
+                  <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-green-400 text-sm">
+                      Thank you! We've received your commercial inquiry and will contact you within 24 hours.
+                    </p>
+                  </div>
+                )}
+
+                {submitStatus === 'error' && (
+                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-red-400 text-sm">
+                      There was an error submitting your form. Please try again or call us directly.
+                    </p>
+                  </div>
+                )}
+                
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="businessName" className="block text-sm font-medium text-text-secondary mb-2">
@@ -99,7 +135,8 @@ const Commercial: React.FC = () => {
                       value={formData.businessName}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300"
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300 disabled:opacity-50"
                       placeholder="Enter your business name"
                     />
                   </div>
@@ -115,7 +152,8 @@ const Commercial: React.FC = () => {
                       value={formData.contactName}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300"
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300 disabled:opacity-50"
                       placeholder="Enter your full name"
                     />
                   </div>
@@ -131,7 +169,8 @@ const Commercial: React.FC = () => {
                       value={formData.phoneNumber}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300"
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300 disabled:opacity-50"
                       placeholder="(555) 123-4567"
                     />
                   </div>
@@ -146,17 +185,19 @@ const Commercial: React.FC = () => {
                       value={formData.businessAddress}
                       onChange={handleInputChange}
                       required
+                      disabled={isSubmitting}
                       rows={3}
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300 resize-none"
+                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all duration-300 resize-none disabled:opacity-50"
                       placeholder="Enter your business address"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-background-primary font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-luxe hover:shadow-gold-glow transform hover:-translate-y-0.5"
+                    disabled={isSubmitting}
+                    className="w-full bg-gold-gradient hover:bg-gold-gradient-hover text-background-primary font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-luxe hover:shadow-gold-glow transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    Get My Free Quote
+                    {isSubmitting ? 'Submitting...' : 'Get My Free Quote'}
                   </button>
                 </form>
 

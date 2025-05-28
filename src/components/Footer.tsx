@@ -73,29 +73,29 @@ const Footer: React.FC = () => {
             <h4 className="text-lg font-semibold text-text-primary mb-6">Our Services</h4>
             <ul className="space-y-3">
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Window Washing
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Pressure Washing
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Roof & Gutter Cleaning
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Exterior Cleaning
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Solar Panel Cleaning
-                </a>
+                </Link>
               </li>
               <li>
                 <Link to="/gallery" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
@@ -115,14 +115,14 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                <Link to="/services" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                   Services
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#bundles" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
-                  Service Packages
-                </a>
+                <Link to="/about" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                  About Us
+                </Link>
               </li>
               <li>
                 <Link to="/gallery" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
@@ -130,14 +130,14 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#reviews" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
-                  Reviews
-                </a>
+                <Link to="/commercial" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                  Commercial
+                </Link>
               </li>
               <li>
-                <a href="#contact" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
-                  Get Quote
-                </a>
+                <Link to="/contact" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+                  Contact Us
+                </Link>
               </li>
             </ul>
           </div>
@@ -152,8 +152,8 @@ const Footer: React.FC = () => {
                 </svg>
                 <div>
                   <p className="text-text-secondary">Phone</p>
-                  <a href="tel:+1234567890" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
-                    (123) 456-7890
+                  <a href="tel:+15127018085" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
+                    (512) 701-8085
                   </a>
                 </div>
               </div>
@@ -164,8 +164,8 @@ const Footer: React.FC = () => {
                 </svg>
                 <div>
                   <p className="text-text-secondary">Email</p>
-                  <a href="mailto:info@elev8cleaning.com" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
-                    info@elev8cleaning.com
+                  <a href="mailto:contact@elev8texas.com" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
+                    contact@elev8texas.com
                   </a>
                 </div>
               </div>
@@ -178,7 +178,7 @@ const Footer: React.FC = () => {
                 <div>
                   <p className="text-text-secondary">Service Area</p>
                   <p className="text-text-primary font-medium">
-                    Local Area & Surrounding Communities
+                    Greater Austin Area
                   </p>
                 </div>
               </div>
@@ -190,9 +190,9 @@ const Footer: React.FC = () => {
                 <div>
                   <p className="text-text-secondary">Business Hours</p>
                   <div className="text-text-primary font-medium">
-                    <p>Mon - Fri: 8:00 AM - 6:00 PM</p>
-                    <p>Sat: 9:00 AM - 4:00 PM</p>
-                    <p>Sun: By Appointment</p>
+                    <p>Mon - Fri: 7:00 AM - 6:00 PM</p>
+                    <p>Sat: 8:00 AM - 4:00 PM</p>
+                    <p>Sun: Closed</p>
                   </div>
                 </div>
               </div>
@@ -208,12 +208,12 @@ const Footer: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-6 text-sm">
-              <a href="#privacy" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+              <Link to="/privacy-policy" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                 Privacy Policy
-              </a>
-              <a href="#terms" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
+              </Link>
+              <Link to="/terms-of-service" className="text-text-secondary hover:text-gold-500 transition-colors duration-300">
                 Terms of Service
-              </a>
+              </Link>
               <div className="flex items-center space-x-2 text-text-secondary">
                 <span>Licensed & Insured</span>
                 <svg className="w-4 h-4 text-gold-500" fill="currentColor" viewBox="0 0 20 20">

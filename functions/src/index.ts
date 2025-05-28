@@ -20,12 +20,12 @@ const businessEmail = 'contact@elev8texas.com';
 // Create reusable transporter object using Gmail
 const getTransporter = () => {
   return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
+  service: 'gmail',
+  auth: {
       user: gmailEmail.value(),
       pass: gmailPassword.value(),
-    },
-  });
+  },
+});
 };
 
 // Initialize Google Calendar API
@@ -484,7 +484,7 @@ export const sendContactNotification = onFirestoreDocumentCreated(
     } catch (error) {
       console.error('Error sending contact notification:', error);
     }
-  }
+    }
 );
 
 // Function to send email notification when new quote is created
@@ -566,6 +566,50 @@ export const sendBundleNotification = onFirestoreDocumentCreated(
 
     } catch (error) {
       console.error('Error sending bundle notification:', error);
+    }
+  }
+);
+
+// Email notification for commercial inquiries
+export const onCommercialInquiryCreated = onFirestoreDocumentCreated(
+  'commercial-inquiries/{docId}',
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) {
+      console.log('No data associated with the event');
+      return;
+    }
+
+    const data = snapshot.data();
+    const docId = event.params.docId;
+
+    try {
+      const transporter = getTransporter();
+      
+      // Email to business
+      const businessMailOptions = {
+        from: gmailEmail.value(),
+        to: businessEmail,
+        subject: `New Commercial Inquiry - ${data.businessName}`,
+        html: `
+          <h2>New Commercial Inquiry Received</h2>
+          <p><strong>Inquiry ID:</strong> ${docId}</p>
+          <p><strong>Business Name:</strong> ${data.businessName}</p>
+          <p><strong>Contact Person:</strong> ${data.contactName}</p>
+          <p><strong>Phone Number:</strong> ${data.phoneNumber}</p>
+          <p><strong>Business Address:</strong> ${data.businessAddress}</p>
+          <p><strong>Submitted:</strong> ${data.timestamp?.toDate()?.toLocaleString() || 'Unknown'}</p>
+          <p><strong>Source:</strong> Commercial Form</p>
+          
+          <hr>
+          <p><em>This inquiry was automatically generated from the Elev8 website commercial form.</em></p>
+        `,
+      };
+
+      await transporter.sendMail(businessMailOptions);
+      console.log(`Commercial inquiry notification sent for ${docId}`);
+    } catch (error) {
+      console.error('Error sending commercial inquiry notification:', error);
     }
   }
 ); 

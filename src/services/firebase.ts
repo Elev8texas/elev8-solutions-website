@@ -58,6 +58,13 @@ export interface ClientProfileData {
   additionalInfo?: any;
 }
 
+export interface CommercialFormData {
+  businessName: string;
+  contactName: string;
+  phoneNumber: string;
+  businessAddress: string;
+}
+
 // Save email only (for popups, newsletter signups, etc.)
 export const saveEmail = async (email: string, source: string = 'popup') => {
   try {
@@ -239,6 +246,42 @@ export const saveServiceBooking = async (serviceName: string, customerInfo: any)
     return docRef.id;
   } catch (error) {
     console.error('Error saving service booking:', error);
+    throw error;
+  }
+};
+
+// Save commercial form data to Firestore (also save client profile)
+export const saveCommercialForm = async (formData: CommercialFormData) => {
+  try {
+    // Save to commercial-inquiries collection
+    const docRef = await addDoc(collection(db, 'commercial-inquiries'), {
+      ...formData,
+      timestamp: Timestamp.now(),
+      status: 'new',
+      source: 'commercial-form'
+    });
+    console.log('Commercial inquiry saved with ID: ', docRef.id);
+
+    // Also save to Client Profiles collection
+    const clientProfile: ClientProfileData = {
+      name: formData.contactName,
+      email: '', // Commercial form doesn't collect email
+      phone: formData.phoneNumber,
+      address: formData.businessAddress,
+      serviceInquired: 'Commercial Cleaning Services',
+      source: 'commercial-form',
+      status: 'new',
+      additionalInfo: {
+        businessName: formData.businessName,
+        isCommercial: true
+      }
+    };
+    
+    await saveClientProfile(clientProfile);
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving commercial inquiry:', error);
     throw error;
   }
 };

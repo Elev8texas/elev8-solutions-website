@@ -14,9 +14,12 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import ContactForm from './pages/ContactForm';
 import Quote from './pages/Quote';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 import Footer from './components/Footer';
 import StickyHelpButton from './components/StickyHelpButton';
 import NewsletterPopup from './components/NewsletterPopup';
+import ScrollToTop from './components/ScrollToTop';
 
 function HomePage() {
   return (
@@ -56,6 +59,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <div className="min-h-screen bg-background-primary">
         <Routes>
           <Route path="/" element={
@@ -80,6 +84,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/help" element={<ContactForm />} />
           <Route path="/quote" element={<Quote />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
         </Routes>
         
         {/* Newsletter Popup */}
