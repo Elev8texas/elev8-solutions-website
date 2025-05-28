@@ -106,11 +106,17 @@ This appointment was automatically scheduled through the Elev8 Solutions website
       location: address || '',
     };
 
-    const response = await calendar.events.insert({
+    // Properly structure the API call for googleapis v131
+    const insertParams = {
       calendarId: calendarId.value(),
-      requestBody: event,
-      sendUpdates: 'all', // Send invitations to all attendees
-    });
+      resource: event,
+      sendUpdates: 'all' as const, // Send invitations to all attendees
+    };
+
+    const response = await calendar.events.insert(insertParams);
+
+    // Type the response properly
+    const eventData = response.data;
 
     // Save appointment to Firestore
     const appointmentData = {
@@ -121,7 +127,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
       startTime: admin.firestore.Timestamp.fromDate(new Date(startTime)),
       endTime: admin.firestore.Timestamp.fromDate(new Date(endTime)),
       address: address || '',
-      calendarEventId: response.data?.id || '',
+      calendarEventId: eventData.id || '',
       status: 'scheduled',
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -130,14 +136,14 @@ This appointment was automatically scheduled through the Elev8 Solutions website
       .collection('appointments')
       .add(appointmentData);
 
-    console.log(`Calendar event created: ${response.data?.id}`);
+    console.log(`Calendar event created: ${eventData.id}`);
     console.log(`Appointment saved: ${appointmentRef.id}`);
 
     return {
       success: true,
-      eventId: response.data?.id || '',
+      eventId: eventData.id || '',
       appointmentId: appointmentRef.id,
-      eventLink: response.data?.htmlLink || '',
+      eventLink: eventData.htmlLink || '',
     };
 
   } catch (error) {
@@ -184,7 +190,7 @@ export const getAvailableTimeSlots = onCall(async (request) => {
       orderBy: 'startTime',
     });
 
-    const existingEvents = response.data?.items || [];
+    const existingEvents = response.data.items || [];
 
     // Generate time slots (1-hour intervals)
     const timeSlots = [];

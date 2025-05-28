@@ -79,7 +79,6 @@ const getCalendarAuth = () => {
 };
 // Create calendar event
 exports.createCalendarEvent = (0, https_1.onCall)(async (request) => {
-    var _a, _b, _c, _d;
     try {
         const { customerName, customerEmail, customerPhone, service, startTime, endTime, address } = request.data;
         // Validate required fields
@@ -126,11 +125,15 @@ This appointment was automatically scheduled through the Elev8 Solutions website
             },
             location: address || '',
         };
-        const response = await calendar.events.insert({
+        // Properly structure the API call for googleapis v131
+        const insertParams = {
             calendarId: calendarId.value(),
-            requestBody: event,
+            resource: event,
             sendUpdates: 'all', // Send invitations to all attendees
-        });
+        };
+        const response = await calendar.events.insert(insertParams);
+        // Type the response properly
+        const eventData = response.data;
         // Save appointment to Firestore
         const appointmentData = {
             customerName,
@@ -140,20 +143,20 @@ This appointment was automatically scheduled through the Elev8 Solutions website
             startTime: admin.firestore.Timestamp.fromDate(new Date(startTime)),
             endTime: admin.firestore.Timestamp.fromDate(new Date(endTime)),
             address: address || '',
-            calendarEventId: ((_a = response.data) === null || _a === void 0 ? void 0 : _a.id) || '',
+            calendarEventId: eventData.id || '',
             status: 'scheduled',
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
         };
         const appointmentRef = await admin.firestore()
             .collection('appointments')
             .add(appointmentData);
-        console.log(`Calendar event created: ${(_b = response.data) === null || _b === void 0 ? void 0 : _b.id}`);
+        console.log(`Calendar event created: ${eventData.id}`);
         console.log(`Appointment saved: ${appointmentRef.id}`);
         return {
             success: true,
-            eventId: ((_c = response.data) === null || _c === void 0 ? void 0 : _c.id) || '',
+            eventId: eventData.id || '',
             appointmentId: appointmentRef.id,
-            eventLink: ((_d = response.data) === null || _d === void 0 ? void 0 : _d.htmlLink) || '',
+            eventLink: eventData.htmlLink || '',
         };
     }
     catch (error) {
@@ -163,7 +166,6 @@ This appointment was automatically scheduled through the Elev8 Solutions website
 });
 // Get available time slots
 exports.getAvailableTimeSlots = (0, https_1.onCall)(async (request) => {
-    var _a;
     try {
         const { date } = request.data;
         if (!date) {
@@ -192,7 +194,7 @@ exports.getAvailableTimeSlots = (0, https_1.onCall)(async (request) => {
             singleEvents: true,
             orderBy: 'startTime',
         });
-        const existingEvents = ((_a = response.data) === null || _a === void 0 ? void 0 : _a.items) || [];
+        const existingEvents = response.data.items || [];
         // Generate time slots (1-hour intervals)
         const timeSlots = [];
         const current = new Date(startOfDay);
