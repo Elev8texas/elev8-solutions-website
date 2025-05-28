@@ -303,4 +303,163 @@ For additional help:
 - Automated appointment reminders
 - Payment processing integration
 - Review management system
-- Advanced scheduling features 
+- Advanced scheduling features
+
+# Firebase Functions Setup Guide
+
+This guide explains how to set up the server-side Firebase Functions for Google Calendar integration and email notifications.
+
+## Prerequisites
+
+1. Firebase project with Firestore database enabled
+2. Google Cloud Console project with Calendar API enabled
+3. Gmail account with app-specific password
+4. Google Service Account (recommended) or API key
+
+## Environment Variables Setup
+
+The Firebase Functions require several environment variables to be configured:
+
+### Method 1: Using Firebase Functions v2 Parameters (Recommended)
+
+```bash
+# Set Gmail configuration for email notifications
+firebase functions:secrets:set GMAIL_EMAIL
+firebase functions:secrets:set GMAIL_PASSWORD
+
+# Set Google Calendar API configuration
+firebase functions:secrets:set GOOGLE_API_KEY
+firebase functions:secrets:set GOOGLE_CALENDAR_ID
+firebase functions:secrets:set GOOGLE_SERVICE_ACCOUNT_KEY
+```
+
+### Method 2: Using Legacy Config (Alternative)
+
+```bash
+firebase functions:config:set gmail.email="your-email@gmail.com"
+firebase functions:config:set gmail.password="your-app-password"
+firebase functions:config:set google.api_key="your-api-key"
+firebase functions:config:set google.calendar_id="primary"
+firebase functions:config:set google.service_account_key='{"type":"service_account",...}'
+```
+
+## Required Configuration Values
+
+### Gmail Setup
+1. **GMAIL_EMAIL**: Your Gmail address (e.g., `contact@elev8texas.com`)
+2. **GMAIL_PASSWORD**: App-specific password (NOT your regular Gmail password)
+
+To get an app-specific password:
+- Enable 2-factor authentication on your Google account
+- Go to Google Account settings > Security > App passwords
+- Generate a new app password for "Mail"
+- Use this 16-character password
+
+### Google Calendar API Setup
+
+#### Option A: Service Account (Recommended for Production)
+1. Go to Google Cloud Console
+2. Enable Calendar API
+3. Create a Service Account
+4. Download the JSON key file
+5. Share your Google Calendar with the service account email
+6. Set `GOOGLE_SERVICE_ACCOUNT_KEY` to the entire JSON content
+
+#### Option B: API Key (Limited Functionality)
+1. Go to Google Cloud Console
+2. Enable Calendar API
+3. Create an API key
+4. Restrict the key to Calendar API
+5. Set `GOOGLE_API_KEY` to the API key value
+
+### Calendar Configuration
+- **GOOGLE_CALENDAR_ID**: Usually `"primary"` for your main calendar, or the specific calendar ID
+
+## Deployment
+
+1. Build the functions:
+```bash
+cd functions
+npm run build
+```
+
+2. Deploy to Firebase:
+```bash
+firebase deploy --only functions
+```
+
+## Available Functions
+
+### Calendar Functions
+- `createCalendarEvent`: Creates calendar events and saves appointments to Firestore
+- `getAvailableTimeSlots`: Retrieves available time slots for booking
+- `updateAppointmentStatus`: Updates appointment status and manages calendar events
+
+### Email Notification Functions
+- `sendEmailNotification`: Triggered when new emails are collected
+- `sendAppointmentNotification`: Triggered when new appointments are created
+- `sendClientProfileNotification`: Triggered when new client profiles are created
+- `sendContactNotification`: Triggered when new contacts are submitted
+- `sendQuoteNotification`: Triggered when new quotes are requested
+- `sendBundleNotification`: Triggered when new bundles are selected
+
+## Testing
+
+You can test the functions locally using the Firebase emulator:
+
+```bash
+cd functions
+npm run serve
+```
+
+## Security Notes
+
+1. Never commit actual credentials to version control
+2. Use app-specific passwords for Gmail, not your main password
+3. Restrict API keys to only necessary services
+4. Use service accounts for production deployments
+5. Regularly rotate credentials
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Authentication not configured"**: Check that environment variables are set correctly
+2. **"Calendar API not enabled"**: Enable Calendar API in Google Cloud Console
+3. **"Permission denied"**: Ensure service account has calendar access
+4. **"Invalid credentials"**: Verify Gmail app password is correct
+
+### Checking Configuration
+
+View current configuration:
+```bash
+firebase functions:config:get
+```
+
+### Logs
+
+View function logs:
+```bash
+firebase functions:log
+```
+
+## Calendar Integration Features
+
+- **Automatic Event Creation**: Creates Google Calendar events when appointments are booked
+- **Availability Checking**: Checks existing calendar events to show available time slots
+- **Email Invitations**: Automatically sends calendar invitations to customers
+- **Reminder Setup**: Configures email reminders (24 hours and 1 hour before)
+- **Cancellation Handling**: Removes calendar events when appointments are cancelled
+- **Business Hours**: Respects business hours (Mon-Fri 7AM-6PM, Sat 8AM-4PM, Sun closed)
+
+## Data Flow
+
+1. Customer books appointment on website
+2. Frontend calls `createCalendarEvent` Firebase Function
+3. Function creates Google Calendar event
+4. Function saves appointment data to Firestore
+5. Firestore trigger sends email notifications
+6. Customer receives calendar invitation and confirmation email
+7. Business receives notification email
+
+This setup provides a complete calendar integration system with automatic notifications and proper data organization. 

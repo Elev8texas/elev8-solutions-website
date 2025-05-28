@@ -1,35 +1,286 @@
-import * as functions from 'firebase-functions';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onDocumentCreated as onFirestoreDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 import * as nodemailer from 'nodemailer';
+import { google } from 'googleapis';
+import { defineString } from 'firebase-functions/params';
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Email configuration
-const gmailEmail = functions.config().gmail?.email;
-const gmailPassword = functions.config().gmail?.password;
+// Define configuration parameters
+const gmailEmail = defineString('GMAIL_EMAIL');
+const gmailPassword = defineString('GMAIL_PASSWORD');
+const googleApiKey = defineString('GOOGLE_API_KEY');
+const calendarId = defineString('GOOGLE_CALENDAR_ID', { default: 'primary' });
+const serviceAccountKey = defineString('GOOGLE_SERVICE_ACCOUNT_KEY');
+
 const businessEmail = 'contact@elev8texas.com';
 
 // Create reusable transporter object using Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: gmailEmail,
-    pass: gmailPassword,
-  },
+const getTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailEmail.value(),
+      pass: gmailPassword.value(),
+    },
+  });
+};
+
+// Initialize Google Calendar API
+const getCalendarAuth = () => {
+  if (serviceAccountKey.value()) {
+    // Use service account for server-side authentication
+    const credentials = JSON.parse(serviceAccountKey.value());
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/calendar']
+    });
+    return auth;
+  } else if (googleApiKey.value()) {
+    // Fallback to API key (limited functionality)
+    google.options({ auth: googleApiKey.value() });
+    return googleApiKey.value();
+  }
+  throw new Error('Google Calendar authentication not configured');
+};
+
+// Create calendar event
+export const createCalendarEvent = onCall(async (request) => {
+  try {
+    const {
+      customerName,
+      customerEmail,
+      customerPhone,
+      service,
+      startTime,
+      endTime,
+      address
+    } = request.data;
+
+    // Validate required fields
+    if (!customerName || !customerEmail || !service || !startTime || !endTime) {
+      throw new HttpsError('invalid-argument', 'Missing required fields');
+    }
+
+    const auth = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const event = {
+      summary: `${service} - ${customerName}`,
+      description: `
+Service: ${service}
+Customer: ${customerName}
+Phone: ${customerPhone || 'Not provided'}
+Email: ${customerEmail}
+${address ? `Address: ${address}` : ''}
+
+This appointment was automatically scheduled through the Elev8 Solutions website.
+      `.trim(),
+      start: {
+        dateTime: startTime,
+        timeZone: 'America/Chicago', // Central Time for Texas
+      },
+      end: {
+        dateTime: endTime,
+        timeZone: 'America/Chicago',
+      },
+      attendees: [
+        {
+          email: customerEmail,
+          displayName: customerName,
+        },
+        {
+          email: businessEmail,
+          displayName: 'Elev8 Solutions',
+        }
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: 'email', minutes: 24 * 60 }, // 24 hours before
+          { method: 'email', minutes: 60 },     // 1 hour before
+        ],
+      },
+      location: address || '',
+    };
+
+    const response = await calendar.events.insert({
+      calendarId: calendarId.value(),
+      requestBody: event,
+      sendUpdates: 'all', // Send invitations to all attendees
+    });
+
+    // Save appointment to Firestore
+    const appointmentData = {
+      customerName,
+      customerEmail,
+      customerPhone: customerPhone || '',
+      service,
+      startTime: admin.firestore.Timestamp.fromDate(new Date(startTime)),
+      endTime: admin.firestore.Timestamp.fromDate(new Date(endTime)),
+      address: address || '',
+      calendarEventId: response.data?.id || '',
+      status: 'scheduled',
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const appointmentRef = await admin.firestore()
+      .collection('appointments')
+      .add(appointmentData);
+
+    console.log(`Calendar event created: ${response.data?.id}`);
+    console.log(`Appointment saved: ${appointmentRef.id}`);
+
+    return {
+      success: true,
+      eventId: response.data?.id || '',
+      appointmentId: appointmentRef.id,
+      eventLink: response.data?.htmlLink || '',
+    };
+
+  } catch (error) {
+    console.error('Error creating calendar event:', error);
+    throw new HttpsError('internal', 'Failed to create calendar event');
+  }
+});
+
+// Get available time slots
+export const getAvailableTimeSlots = onCall(async (request) => {
+  try {
+    const { date } = request.data;
+
+    if (!date) {
+      throw new HttpsError('invalid-argument', 'Date is required');
+    }
+
+    const auth = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(7, 0, 0, 0); // 7 AM start
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(18, 0, 0, 0); // 6 PM end
+
+    // Adjust for Saturday hours (8 AM - 4 PM)
+    if (startOfDay.getDay() === 6) {
+      startOfDay.setHours(8, 0, 0, 0);
+      endOfDay.setHours(16, 0, 0, 0);
+    }
+
+    // No regular hours on Sunday
+    if (startOfDay.getDay() === 0) {
+      return { timeSlots: [] };
+    }
+
+    // Get existing events
+    const response = await calendar.events.list({
+      calendarId: calendarId.value(),
+      timeMin: startOfDay.toISOString(),
+      timeMax: endOfDay.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    const existingEvents = response.data?.items || [];
+
+    // Generate time slots (1-hour intervals)
+    const timeSlots = [];
+    const current = new Date(startOfDay);
+
+    while (current < endOfDay) {
+      const slotStart = new Date(current);
+      const slotEnd = new Date(current.getTime() + 60 * 60 * 1000); // 1 hour later
+
+      // Check if this slot conflicts with existing events
+      const isAvailable = !existingEvents.some((event: any) => {
+        if (!event.start?.dateTime || !event.end?.dateTime) return false;
+
+        const eventStart = new Date(event.start.dateTime);
+        const eventEnd = new Date(event.end.dateTime);
+
+        return (slotStart < eventEnd && slotEnd > eventStart);
+      });
+
+      timeSlots.push({
+        start: slotStart.toISOString(),
+        end: slotEnd.toISOString(),
+        available: isAvailable
+      });
+
+      current.setHours(current.getHours() + 1);
+    }
+
+    return { timeSlots };
+
+  } catch (error) {
+    console.error('Error fetching available time slots:', error);
+    throw new HttpsError('internal', 'Failed to fetch available time slots');
+  }
+});
+
+// Update appointment status
+export const updateAppointmentStatus = onCall(async (request) => {
+  try {
+    const { appointmentId, status, calendarEventId } = request.data;
+
+    if (!appointmentId || !status) {
+      throw new HttpsError('invalid-argument', 'Missing required fields');
+    }
+
+    // Update Firestore appointment
+    await admin.firestore()
+      .collection('appointments')
+      .doc(appointmentId)
+      .update({
+        status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+    // If cancelling, also delete the calendar event
+    if (status === 'cancelled' && calendarEventId) {
+      try {
+        const auth = getCalendarAuth();
+        const calendar = google.calendar({ version: 'v3', auth });
+        
+        await calendar.events.delete({
+          calendarId: calendarId.value(),
+          eventId: calendarEventId,
+          sendUpdates: 'all', // Notify attendees
+        });
+        
+        console.log(`Calendar event deleted: ${calendarEventId}`);
+      } catch (calendarError) {
+        console.error('Error deleting calendar event:', calendarError);
+        // Don't fail the whole operation if calendar deletion fails
+      }
+    }
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error updating appointment:', error);
+    throw new HttpsError('internal', 'Failed to update appointment');
+  }
 });
 
 // Function to send email notification when new email is collected
-export const sendEmailNotification = functions.firestore
-  .document('Emails/{emailId}')
-  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const emailData = snap.data();
-    const emailId = context.params.emailId;
+export const sendEmailNotification = onFirestoreDocumentCreated(
+  'Emails/{emailId}',
+  async (event) => {
+    const emailData = event.data?.data();
+    const emailId = event.params.emailId;
+
+    if (!emailData) return;
 
     try {
+      const transporter = getTransporter();
+      
       // Email to business
       const businessMailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
         to: businessEmail,
         subject: `New Email Subscription - ${emailData.source}`,
         html: `
@@ -51,19 +302,66 @@ export const sendEmailNotification = functions.firestore
     } catch (error) {
       console.error('Error sending email notification:', error);
     }
-  });
+  }
+);
 
-// Function to send email notification when new client profile is created
-export const sendClientProfileNotification = functions.firestore
-  .document('client-profiles/{profileId}')
-  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const profileData = snap.data();
-    const profileId = context.params.profileId;
+// Function to send email notification when new appointment is created
+export const sendAppointmentNotification = onFirestoreDocumentCreated(
+  'appointments/{appointmentId}',
+  async (event) => {
+    const appointmentData = event.data?.data();
+    const appointmentId = event.params.appointmentId;
+
+    if (!appointmentData) return;
 
     try {
+      const transporter = getTransporter();
+      
       // Email to business
       const businessMailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
+        to: businessEmail,
+        subject: `New Appointment Scheduled - ${appointmentData.customerName}`,
+        html: `
+          <h2>New Appointment Scheduled</h2>
+          <p><strong>Appointment ID:</strong> ${appointmentId}</p>
+          <p><strong>Customer:</strong> ${appointmentData.customerName}</p>
+          <p><strong>Email:</strong> ${appointmentData.customerEmail}</p>
+          <p><strong>Phone:</strong> ${appointmentData.customerPhone || 'Not provided'}</p>
+          <p><strong>Service:</strong> ${appointmentData.service}</p>
+          <p><strong>Date & Time:</strong> ${appointmentData.startTime.toDate().toLocaleString()}</p>
+          <p><strong>Address:</strong> ${appointmentData.address || 'Not provided'}</p>
+          <p><strong>Calendar Event ID:</strong> ${appointmentData.calendarEventId}</p>
+          
+          <hr>
+          <p><em>This appointment was automatically scheduled through your Elev8 website.</em></p>
+        `,
+      };
+
+      await transporter.sendMail(businessMailOptions);
+      console.log(`Appointment notification sent for ${appointmentId}`);
+
+    } catch (error) {
+      console.error('Error sending appointment notification:', error);
+    }
+  }
+);
+
+// Function to send email notification when new client profile is created
+export const sendClientProfileNotification = onFirestoreDocumentCreated(
+  'client-profiles/{profileId}',
+  async (event) => {
+    const profileData = event.data?.data();
+    const profileId = event.params.profileId;
+
+    if (!profileData) return;
+
+    try {
+      const transporter = getTransporter();
+      
+      // Email to business
+      const businessMailOptions = {
+        from: gmailEmail.value(),
         to: businessEmail,
         subject: `New Client Profile - ${profileData.name}`,
         html: `
@@ -94,19 +392,24 @@ export const sendClientProfileNotification = functions.firestore
     } catch (error) {
       console.error('Error sending client profile notification:', error);
     }
-  });
+  }
+);
 
 // Function to send email notification when new contact is created
-export const sendContactNotification = functions.firestore
-  .document('contacts/{contactId}')
-  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const contactData = snap.data();
-    const contactId = context.params.contactId;
+export const sendContactNotification = onFirestoreDocumentCreated(
+  'contacts/{contactId}',
+  async (event) => {
+    const contactData = event.data?.data();
+    const contactId = event.params.contactId;
+
+    if (!contactData) return;
 
     try {
+      const transporter = getTransporter();
+      
       // Email to business
       const businessMailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
         to: businessEmail,
         subject: `New Contact Form Submission - ${contactData.name}`,
         html: `
@@ -129,7 +432,7 @@ export const sendContactNotification = functions.firestore
 
       // Email confirmation to customer
       const customerMailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
         to: contactData.email,
         subject: 'Thank you for contacting Elev8 Solutions',
         html: `
@@ -167,7 +470,7 @@ export const sendContactNotification = functions.firestore
       console.log(`Email notifications sent for contact ${contactId}`);
       
       // Update the contact document to mark emails as sent
-      await snap.ref.update({
+      await event.data?.ref.update({
         emailsSent: true,
         emailsSentAt: admin.firestore.FieldValue.serverTimestamp()
       });
@@ -175,19 +478,24 @@ export const sendContactNotification = functions.firestore
     } catch (error) {
       console.error('Error sending contact notification:', error);
     }
-  });
+  }
+);
 
 // Function to send email notification when new quote is created
-export const sendQuoteNotification = functions.firestore
-  .document('quotes/{quoteId}')
-  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const quoteData = snap.data();
-    const quoteId = context.params.quoteId;
+export const sendQuoteNotification = onFirestoreDocumentCreated(
+  'quotes/{quoteId}',
+  async (event) => {
+    const quoteData = event.data?.data();
+    const quoteId = event.params.quoteId;
+
+    if (!quoteData) return;
 
     try {
+      const transporter = getTransporter();
+      
       // Email to business
       const businessMailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
         to: businessEmail,
         subject: `New Quote Request - ${quoteData.name}`,
         html: `
@@ -216,18 +524,23 @@ export const sendQuoteNotification = functions.firestore
     } catch (error) {
       console.error('Error sending quote notification:', error);
     }
-  });
+  }
+);
 
 // Function to send email notification for bundle selections
-export const sendBundleNotification = functions.firestore
-  .document('bundle-selections/{bundleId}')
-  .onCreate(async (snap: functions.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const bundleData = snap.data();
-    const bundleId = context.params.bundleId;
+export const sendBundleNotification = onFirestoreDocumentCreated(
+  'bundle-selections/{bundleId}',
+  async (event) => {
+    const bundleData = event.data?.data();
+    const bundleId = event.params.bundleId;
+
+    if (!bundleData) return;
 
     try {
+      const transporter = getTransporter();
+      
       const mailOptions = {
-        from: gmailEmail,
+        from: gmailEmail.value(),
         to: businessEmail,
         subject: `New Bundle Selection - ${bundleData.bundleName}`,
         html: `
@@ -248,4 +561,5 @@ export const sendBundleNotification = functions.firestore
     } catch (error) {
       console.error('Error sending bundle notification:', error);
     }
-  }); 
+  }
+); 

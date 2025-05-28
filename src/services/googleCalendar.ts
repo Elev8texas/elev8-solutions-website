@@ -1,6 +1,8 @@
-// Browser-compatible Google Calendar integration using REST API
-const GOOGLE_API_KEY = process.env.REACT_APP_GOOGLE_API_KEY;
-const CALENDAR_ID = process.env.REACT_APP_GOOGLE_CALENDAR_ID || 'primary';
+// Browser-compatible Google Calendar integration using Firebase Functions
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import app from './firebase';
+
+const functions = getFunctions(app);
 
 export interface CalendarEvent {
   summary: string;
@@ -25,65 +27,18 @@ export interface TimeSlot {
   available: boolean;
 }
 
-// Get available time slots for scheduling (browser-compatible)
+// Get available time slots for scheduling using Firebase Functions
 export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> => {
   try {
-    if (!GOOGLE_API_KEY) {
-      console.warn('Google API key not configured, returning mock time slots');
-      return generateMockTimeSlots(date);
-    }
-
-    const startOfDay = new Date(date);
-    startOfDay.setHours(8, 0, 0, 0); // 8 AM start
+    const getSlots = httpsCallable(functions, 'getAvailableTimeSlots');
+    const result = await getSlots({ date });
     
-    const endOfDay = new Date(date);
-    endOfDay.setHours(18, 0, 0, 0); // 6 PM end
-
-    // Use Google Calendar API REST endpoint
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?` +
-      `key=${GOOGLE_API_KEY}&` +
-      `timeMin=${startOfDay.toISOString()}&` +
-      `timeMax=${endOfDay.toISOString()}&` +
-      `singleEvents=true&` +
-      `orderBy=startTime`
-    );
-
-    if (!response.ok) {
-      throw new Error(`Calendar API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const existingEvents = data.items || [];
-    
-    // Generate time slots (1-hour intervals)
-    const timeSlots: TimeSlot[] = [];
-    const current = new Date(startOfDay);
-    
-    while (current < endOfDay) {
-      const slotStart = new Date(current);
-      const slotEnd = new Date(current.getTime() + 60 * 60 * 1000); // 1 hour later
-      
-      // Check if this slot conflicts with existing events
-      const isAvailable = !existingEvents.some((event: any) => {
-        if (!event.start?.dateTime || !event.end?.dateTime) return false;
-        
-        const eventStart = new Date(event.start.dateTime);
-        const eventEnd = new Date(event.end.dateTime);
-        
-        return (slotStart < eventEnd && slotEnd > eventStart);
-      });
-      
-      timeSlots.push({
-        start: slotStart.toISOString(),
-        end: slotEnd.toISOString(),
-        available: isAvailable
-      });
-      
-      current.setHours(current.getHours() + 1);
+    if (result.data && (result.data as any).timeSlots) {
+      return (result.data as any).timeSlots;
     }
     
-    return timeSlots;
+    console.warn('No time slots returned from Firebase Function');
+    return generateMockTimeSlots(date);
     
   } catch (error) {
     console.error('Error fetching available time slots:', error);
@@ -122,7 +77,7 @@ const generateMockTimeSlots = (date: string): TimeSlot[] => {
   return timeSlots;
 };
 
-// Create a calendar event (this would typically be done server-side)
+// Create a calendar event using Firebase Functions
 export const createServiceAppointment = async (
   customerName: string,
   customerEmail: string,
@@ -133,9 +88,9 @@ export const createServiceAppointment = async (
   address?: string
 ): Promise<string> => {
   try {
-    // Note: Creating calendar events from the browser requires OAuth2 authentication
-    // For production, this should be done server-side via Firebase Functions
-    console.log('Appointment request:', {
+    const createEvent = httpsCallable(functions, 'createCalendarEvent');
+    
+    const result = await createEvent({
       customerName,
       customerEmail,
       customerPhone,
@@ -145,18 +100,43 @@ export const createServiceAppointment = async (
       address
     });
     
-    // For now, we'll just log the appointment and return a mock ID
-    // In production, this would send the data to your backend/Firebase Function
-    // which would then create the actual calendar event
+    const data = result.data as any;
     
-    const mockEventId = `mock_${Date.now()}`;
-    console.log(`Mock calendar event created with ID: ${mockEventId}`);
-    
-    return mockEventId;
+    if (data.success) {
+      console.log(`Calendar event created: ${data.eventId}`);
+      console.log(`Appointment saved: ${data.appointmentId}`);
+      return data.eventId;
+    } else {
+      throw new Error('Failed to create calendar event');
+    }
     
   } catch (error) {
     console.error('Error creating calendar event:', error);
-    throw new Error('Unable to schedule appointment');
+    throw new Error('Unable to schedule appointment. Please try again or contact us directly.');
+  }
+};
+
+// Update appointment status using Firebase Functions
+export const updateAppointmentStatus = async (
+  appointmentId: string,
+  status: string,
+  calendarEventId?: string
+): Promise<boolean> => {
+  try {
+    const updateStatus = httpsCallable(functions, 'updateAppointmentStatus');
+    
+    const result = await updateStatus({
+      appointmentId,
+      status,
+      calendarEventId
+    });
+    
+    const data = result.data as any;
+    return data.success || false;
+    
+  } catch (error) {
+    console.error('Error updating appointment status:', error);
+    return false;
   }
 };
 
@@ -208,6 +188,7 @@ export const formatTimeSlot = (timeSlot: TimeSlot): string => {
 const googleCalendarService = {
   getAvailableTimeSlots,
   createServiceAppointment,
+  updateAppointmentStatus,
   getBusinessHours,
   isWithinBusinessHours,
   formatTimeSlot

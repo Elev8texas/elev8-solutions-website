@@ -38,6 +38,12 @@ service cloud.firestore {
       allow read, update, delete: if false; // Only backend functions can read/modify
     }
     
+    // Allow public writes to appointments collection (for calendar bookings)
+    match /appointments/{document} {
+      allow create: if true; // Anyone can create appointments
+      allow read, update, delete: if false; // Only backend functions can read/modify
+    }
+    
     // Deny all other operations by default
     match /{document=**} {
       allow read, write: if false;
