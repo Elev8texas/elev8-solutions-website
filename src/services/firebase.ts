@@ -136,7 +136,7 @@ export const saveContactForm = async (formData: ContactFormData) => {
     console.log('✅ Contact saved with ID: ', docRef.id);
 
     console.log('👤 Creating client profile...');
-    // Also save to Client Profiles collection
+    // Also save to Client Profiles collection (non-blocking - don't fail the main operation)
     const clientProfile: ClientProfileData = {
       name: formData.name,
       email: formData.email,
@@ -151,7 +151,11 @@ export const saveContactForm = async (formData: ContactFormData) => {
       }
     };
     
-    await saveClientProfile(clientProfile);
+    // Save client profile without blocking the main operation
+    saveClientProfile(clientProfile).catch(profileError => {
+      console.warn('⚠️ Client profile save failed (main contact still saved):', profileError);
+    });
+    
     console.log('✅ Contact form submission completed successfully');
     
     return docRef.id;
@@ -218,7 +222,10 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
       }
     };
     
-    await saveClientProfile(clientProfile);
+    // Save client profile without blocking the main operation
+    saveClientProfile(clientProfile).catch(profileError => {
+      console.warn('⚠️ Client profile save failed (main quote still saved):', profileError);
+    });
 
     return docRef.id;
   } catch (error) {
@@ -256,7 +263,10 @@ export const saveBundleSelection = async (bundleName: string, customerInfo: any)
         }
       };
       
-      await saveClientProfile(clientProfile);
+      // Save client profile without blocking the main operation
+      saveClientProfile(clientProfile).catch(profileError => {
+        console.warn('⚠️ Client profile save failed (main bundle selection still saved):', profileError);
+      });
     }
 
     return docRef.id;
@@ -295,7 +305,10 @@ export const saveServiceBooking = async (serviceName: string, customerInfo: any)
         }
       };
       
-      await saveClientProfile(clientProfile);
+      // Save client profile without blocking the main operation
+      saveClientProfile(clientProfile).catch(profileError => {
+        console.warn('⚠️ Client profile save failed (main service booking still saved):', profileError);
+      });
     }
 
     return docRef.id;
@@ -332,7 +345,10 @@ export const saveCommercialForm = async (formData: CommercialFormData) => {
       }
     };
     
-    await saveClientProfile(clientProfile);
+    // Save client profile without blocking the main operation
+    saveClientProfile(clientProfile).catch(profileError => {
+      console.warn('⚠️ Client profile save failed (main commercial inquiry still saved):', profileError);
+    });
     
     return docRef.id;
   } catch (error) {
