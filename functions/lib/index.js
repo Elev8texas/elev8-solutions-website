@@ -40,6 +40,10 @@ const admin = __importStar(require("firebase-admin"));
 const nodemailer = __importStar(require("nodemailer"));
 const params_1 = require("firebase-functions/params");
 const googleapis_1 = require("googleapis");
+// CORS configuration for callable functions
+const corsOptions = {
+    cors: true, // Allow all origins
+};
 // Define configuration parameters
 const gmailEmail = (0, params_1.defineString)('GMAIL_EMAIL');
 const gmailPassword = (0, params_1.defineString)('GMAIL_PASSWORD');
@@ -360,7 +364,7 @@ exports.onCommercialInquiryCreated = (0, firestore_1.onDocumentCreated)('commerc
 });
 // Calendar Functions for appointment booking
 // Get available time slots
-exports.getAvailableTimeSlots = (0, https_1.onCall)(async (request) => {
+exports.getAvailableTimeSlots = (0, https_1.onCall)(corsOptions, async (request) => {
     try {
         const { date } = request.data;
         if (!date) {
@@ -423,7 +427,7 @@ exports.getAvailableTimeSlots = (0, https_1.onCall)(async (request) => {
     }
 });
 // Create calendar event and appointment
-exports.createCalendarEvent = (0, https_1.onCall)(async (request) => {
+exports.createCalendarEvent = (0, https_1.onCall)(corsOptions, async (request) => {
     try {
         const { customerName, customerEmail, customerPhone, services, startTime, endTime, address, notes } = request.data;
         // Validate required fields
@@ -509,7 +513,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
     }
 });
 // Update appointment status
-exports.updateAppointmentStatus = (0, https_1.onCall)(async (request) => {
+exports.updateAppointmentStatus = (0, https_1.onCall)(corsOptions, async (request) => {
     try {
         const { appointmentId, status, calendarEventId } = request.data;
         if (!appointmentId || !status) {
