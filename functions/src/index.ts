@@ -5,6 +5,11 @@ import * as nodemailer from 'nodemailer';
 import { defineString } from 'firebase-functions/params';
 import { google } from 'googleapis';
 
+// CORS configuration for callable functions
+const corsOptions = {
+  cors: true, // Allow all origins
+};
+
 // Define configuration parameters
 const gmailEmail = defineString('GMAIL_EMAIL');
 const gmailPassword = defineString('GMAIL_PASSWORD');
@@ -380,7 +385,7 @@ export const onCommercialInquiryCreated = onFirestoreDocumentCreated(
 // Calendar Functions for appointment booking
 
 // Get available time slots
-export const getAvailableTimeSlots = onCall(async (request) => {
+export const getAvailableTimeSlots = onCall(corsOptions, async (request) => {
   try {
     const { date } = request.data;
 
@@ -458,7 +463,7 @@ export const getAvailableTimeSlots = onCall(async (request) => {
 });
 
 // Create calendar event and appointment
-export const createCalendarEvent = onCall(async (request) => {
+export const createCalendarEvent = onCall(corsOptions, async (request) => {
   try {
     const {
       customerName,
@@ -564,7 +569,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
 });
 
 // Update appointment status
-export const updateAppointmentStatus = onCall(async (request) => {
+export const updateAppointmentStatus = onCall(corsOptions, async (request) => {
   try {
     const { appointmentId, status, calendarEventId } = request.data;
 
@@ -606,4 +611,14 @@ export const updateAppointmentStatus = onCall(async (request) => {
     console.error('Error updating appointment:', error);
     throw new HttpsError('internal', 'Failed to update appointment');
   }
+});
+
+// Simple test function to verify CORS configuration
+export const testCORS = onCall(corsOptions, async (request) => {
+  console.log('CORS test function called');
+  return { 
+    success: true, 
+    message: 'CORS is working!',
+    timestamp: new Date().toISOString()
+  };
 }); 
