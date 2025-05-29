@@ -170,8 +170,24 @@ export const saveContactForm = async (formData: ContactFormData) => {
 export const saveQuoteRequest = async (formData: QuoteFormData) => {
   try {
     // Save to original quotes collection for backward compatibility
+    const filteredFormData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      services: formData.services,
+      propertyType: formData.propertyType,
+      // Only include defined values
+      ...(formData.squareFootage !== undefined && formData.squareFootage !== null && { squareFootage: formData.squareFootage }),
+      ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
+      ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
+      ...(formData.stories && { stories: formData.stories }),
+      ...(formData.recurringService && { recurringService: formData.recurringService }),
+      ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
+    };
+    
     const docRef = await addDoc(collection(db, 'quotes'), {
-      ...formData,
+      ...filteredFormData,
       timestamp: Timestamp.now(),
       status: 'pending',
       estimatedPrice: null,
@@ -191,12 +207,13 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
       additionalInfo: {
         services: formData.services,
         propertyType: formData.propertyType,
-        squareFootage: formData.squareFootage,
-        windowCount: formData.windowCount,
-        solarPanelCount: formData.solarPanelCount,
-        stories: formData.stories,
-        recurringService: formData.recurringService,
-        additionalDetails: formData.additionalDetails
+        // Only include defined values to avoid Firestore undefined field errors
+        ...(formData.squareFootage !== undefined && formData.squareFootage !== null && { squareFootage: formData.squareFootage }),
+        ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
+        ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
+        ...(formData.stories && { stories: formData.stories }),
+        ...(formData.recurringService && { recurringService: formData.recurringService }),
+        ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
       }
     };
     
