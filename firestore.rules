@@ -1,58 +1,43 @@
-rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public writes to contacts collection (for form submissions)
-    // But only allow reads for authenticated users
-    match /contacts/{document} {
-      allow create: if true; // Anyone can submit contact forms
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for appointments collection
+    match /appointments/{appointmentId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to quotes collection (for quote requests)
-    match /quotes/{document} {
-      allow create: if true; // Anyone can submit quote requests
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for quotes collection
+    match /quotes/{quoteId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to bundle selections
-    match /bundle-selections/{document} {
-      allow create: if true; // Anyone can select bundles
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for contacts collection
+    match /contacts/{contactId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to service bookings
-    match /service-bookings/{document} {
-      allow create: if true; // Anyone can book services
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for emails collection
+    match /emails/{emailId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to commercial inquiries
-    match /commercial-inquiries/{document} {
-      allow create: if true; // Anyone can submit commercial inquiries
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for client profiles collection
+    match /client-profiles/{profileId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to Emails collection (for popup email collection)
-    match /Emails/{document} {
-      allow create: if true; // Anyone can submit emails
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for bundle selections collection
+    match /bundle-selections/{bundleId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to client-profiles collection (for organized client data)
-    match /client-profiles/{document} {
-      allow create: if true; // Anyone can create client profiles
-      allow read, update, delete: if false; // Only backend functions can read/modify
+    // Allow read/write for commercial inquiries collection
+    match /commercial-inquiries/{inquiryId} {
+      allow read, write: if true;
     }
     
-    // Allow public writes to appointments collection (for calendar bookings)
-    match /appointments/{document} {
-      allow create: if true; // Anyone can create appointments
-      allow read, update, delete: if false; // Only backend functions can read/modify
-    }
-    
-    // Deny all other operations by default
+    // Fallback rule for any other documents (with expiration for security)
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.time < timestamp.date(2025, 12, 31);
     }
   }
-} 
+}

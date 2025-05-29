@@ -128,6 +128,11 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
     const result = await getAvailableSlots({ date });
     console.log('✅ Firebase Functions response:', result);
     
+    // Handle both wrapped object format { timeSlots: [...] } and direct array format
+    if (result.data && typeof result.data === 'object' && 'timeSlots' in result.data && Array.isArray((result.data as any).timeSlots)) {
+      return (result.data as any).timeSlots as TimeSlot[];
+    }
+    
     if (result.data && Array.isArray(result.data)) {
       return result.data as TimeSlot[];
     }
