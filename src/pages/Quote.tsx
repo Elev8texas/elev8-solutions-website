@@ -163,6 +163,25 @@ const Quote: React.FC = () => {
     }
   };
 
+  // Check if required fields are filled based on selected services
+  const isRequiredFieldsFilled = () => {
+    // Property type is always required
+    if (!formData.propertyType) return false;
+    
+    // Check service-specific requirements
+    const needsSquareFootage = formData.selectedServices.some(service => 
+      ['pressure-washing', 'roof-cleaning', 'exterior-cleaning', 'deck-patio', 'driveway-cleaning'].includes(service)
+    );
+    const needsWindowCount = formData.selectedServices.includes('window-washing');
+    const needsSolarPanelCount = formData.selectedServices.includes('solar-panel');
+    
+    if (needsSquareFootage && !formData.squareFootage) return false;
+    if (needsWindowCount && !formData.windowCount) return false;
+    if (needsSolarPanelCount && !formData.solarPanelCount) return false;
+    
+    return true;
+  };
+
   // Calculate pricing based on detailed requirements
   const calculatePricing = () => {
     const selectedServiceObjects = services.filter(s => formData.selectedServices.includes(s.id));
@@ -236,13 +255,22 @@ const Quote: React.FC = () => {
     
     const finalTotal = afterMultiServiceDiscount * (1 - recurringDiscount);
     
+    // Apply minimum service charge of $200
+    const minimumCharge = 200;
+    const adjustedFinalTotal = Math.max(finalTotal, minimumCharge);
+    
+    // Calculate price range (+20%)
+    const priceRangeHigh = adjustedFinalTotal * 1.20;
+    
     return {
       baseTotal,
       adjustedTotal,
       multiServiceDiscount: adjustedTotal * multiServiceDiscount,
       recurringDiscount: afterMultiServiceDiscount * recurringDiscount,
-      finalTotal,
-      selectedServices: selectedServiceObjects
+      finalTotal: adjustedFinalTotal,
+      priceRangeHigh,
+      selectedServices: selectedServiceObjects,
+      isMinimumApplied: finalTotal < minimumCharge
     };
   };
 
@@ -467,6 +495,23 @@ const Quote: React.FC = () => {
                   Select Your Services
                 </h2>
                 
+                {/* Discount Reminder */}
+                <div className="bg-gradient-to-r from-gold-500/10 to-gold-400/10 border border-gold-500/30 rounded-lg p-4 mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">%</span>
+                    </div>
+                    <div>
+                      <p className="text-gold-600 font-semibold text-sm">
+                        💡 Pro Tip: Select 2 or more services to unlock 10% off your total!
+                      </p>
+                      <p className="text-text-secondary text-xs mt-1">
+                        Save more by bundling services together
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {services.map((service) => (
                     <div
@@ -519,7 +564,93 @@ const Quote: React.FC = () => {
                   Project Details
                 </h2>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {/* Only show fields needed for selected services */}
+                <div className="space-y-6">
+                  
+                  {/* Square Footage - Required for most services */}
+                  {(formData.selectedServices.includes('pressure-washing') || 
+                    formData.selectedServices.includes('roof-cleaning') || 
+                    formData.selectedServices.includes('exterior-cleaning') || 
+                    formData.selectedServices.includes('deck-patio') || 
+                    formData.selectedServices.includes('driveway-cleaning')) && (
+                    <div>
+                      <label htmlFor="squareFootage" className="block text-sm font-medium text-text-primary mb-2">
+                        Square Footage *
+                      </label>
+                      <input
+                        type="number"
+                        id="squareFootage"
+                        name="squareFootage"
+                        value={formData.squareFootage}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
+                        placeholder="e.g., 2500"
+                      />
+                      <p className="text-xs text-text-muted mt-1">
+                        Area to be cleaned in square feet
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Window Count - Only for window washing */}
+                  {formData.selectedServices.includes('window-washing') && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="windowCount" className="block text-sm font-medium text-text-primary mb-2">
+                          Number of Windows *
+                        </label>
+                        <input
+                          type="number"
+                          id="windowCount"
+                          name="windowCount"
+                          value={formData.windowCount}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
+                          placeholder="e.g., 20"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="stories" className="block text-sm font-medium text-text-primary mb-2">
+                          Number of Stories *
+                        </label>
+                        <select
+                          id="stories"
+                          name="stories"
+                          value={formData.stories}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary transition-all duration-300"
+                        >
+                          <option value="1">1 Story</option>
+                          <option value="2">2 Stories</option>
+                          <option value="3">3+ Stories</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Solar Panel Count - Only for solar panel cleaning */}
+                  {formData.selectedServices.includes('solar-panel') && (
+                    <div>
+                      <label htmlFor="solarPanelCount" className="block text-sm font-medium text-text-primary mb-2">
+                        Number of Solar Panels *
+                      </label>
+                      <input
+                        type="number"
+                        id="solarPanelCount"
+                        name="solarPanelCount"
+                        value={formData.solarPanelCount}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
+                        placeholder="e.g., 20"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Property Type - Always shown for context */}
                   <div>
                     <label htmlFor="propertyType" className="block text-sm font-medium text-text-primary mb-2">
                       Property Type *
@@ -538,84 +669,22 @@ const Quote: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                  
+                  {/* Additional Details - Optional */}
                   <div>
-                    <label htmlFor="squareFootage" className="block text-sm font-medium text-text-primary mb-2">
-                      Square Footage *
+                    <label htmlFor="additionalDetails" className="block text-sm font-medium text-text-primary mb-2">
+                      Additional Details (Optional)
                     </label>
-                    <input
-                      type="number"
-                      id="squareFootage"
-                      name="squareFootage"
-                      value={formData.squareFootage}
+                    <textarea
+                      id="additionalDetails"
+                      name="additionalDetails"
+                      value={formData.additionalDetails}
                       onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
-                      placeholder="e.g., 2500"
+                      rows={3}
+                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300 resize-vertical"
+                      placeholder="Any specific requirements or special considerations..."
                     />
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="stories" className="block text-sm font-medium text-text-primary mb-2">
-                      Number of Stories
-                    </label>
-                    <select
-                      id="stories"
-                      name="stories"
-                      value={formData.stories}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary transition-all duration-300"
-                    >
-                      <option value="1">1 Story</option>
-                      <option value="2">2 Stories</option>
-                      <option value="3">3+ Stories</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="windowCount" className="block text-sm font-medium text-text-primary mb-2">
-                      Number of Windows (optional)
-                    </label>
-                    <input
-                      type="number"
-                      id="windowCount"
-                      name="windowCount"
-                      value={formData.windowCount}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
-                      placeholder="e.g., 20"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="solarPanelCount" className="block text-sm font-medium text-text-primary mb-2">
-                    Number of Solar Panels (optional)
-                  </label>
-                  <input
-                    type="number"
-                    id="solarPanelCount"
-                    name="solarPanelCount"
-                    value={formData.solarPanelCount}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
-                    placeholder="e.g., 20"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="additionalDetails" className="block text-sm font-medium text-text-primary mb-2">
-                    Additional Details
-                  </label>
-                  <textarea
-                    id="additionalDetails"
-                    name="additionalDetails"
-                    value={formData.additionalDetails}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300 resize-vertical"
-                    placeholder="Any specific requirements, concerns, or additional information..."
-                  />
                 </div>
                 
                 <div className="flex justify-between">
@@ -629,7 +698,7 @@ const Quote: React.FC = () => {
                   <button
                     type="button"
                     onClick={nextStep}
-                    disabled={!formData.propertyType || !formData.squareFootage}
+                    disabled={!formData.propertyType || !isRequiredFieldsFilled()}
                     className="px-8 py-3 bg-gradient-to-r from-gold-500 to-gold-400 hover:from-gold-400 hover:to-gold-300 text-white font-semibold rounded-lg hover:shadow-gold-glow transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next Step
@@ -670,10 +739,6 @@ const Quote: React.FC = () => {
                             <span className="text-text-secondary">Base Total</span>
                             <span className="text-text-primary">${pricing.baseTotal.toFixed(2)}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-text-secondary">Size & Story Adjustment</span>
-                            <span className="text-text-primary">${pricing.adjustedTotal.toFixed(2)}</span>
-                          </div>
                           {pricing.multiServiceDiscount > 0 && (
                             <div className="flex justify-between text-green-400">
                               <span>Multi-Service Discount (10%)</span>
@@ -686,11 +751,25 @@ const Quote: React.FC = () => {
                               <span>-${pricing.recurringDiscount.toFixed(2)}</span>
                             </div>
                           )}
+                          {pricing.isMinimumApplied && (
+                            <div className="flex justify-between text-blue-400">
+                              <span>Minimum Service Charge</span>
+                              <span>${200}</span>
+                            </div>
+                          )}
                           <hr className="border-border-primary" />
                           <div className="flex justify-between text-xl font-bold">
-                            <span className="text-text-primary">Total</span>
-                            <span className="text-gold-500">${pricing.finalTotal.toFixed(2)}</span>
+                            <span className="text-text-primary">Estimated Range</span>
+                            <span className="text-gold-500">
+                              ${pricing.finalTotal.toFixed(2)} - ${pricing.priceRangeHigh.toFixed(2)}
+                            </span>
                           </div>
+                        </div>
+                        <div className="mt-4 p-3 bg-background-primary border border-border-primary rounded-lg">
+                          <p className="text-xs text-text-muted">
+                            * Final price may vary based on site conditions and specific requirements. 
+                            Minimum service charge of $200 applies to all jobs.
+                          </p>
                         </div>
                       </div>
                       
