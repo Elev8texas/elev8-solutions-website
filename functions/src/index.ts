@@ -5,15 +5,12 @@ import * as nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 import { defineString } from 'firebase-functions/params';
 
-// Initialize Firebase Admin
-admin.initializeApp();
-
 // Define configuration parameters
 const gmailEmail = defineString('GMAIL_EMAIL');
 const gmailPassword = defineString('GMAIL_PASSWORD');
 const googleApiKey = defineString('GOOGLE_API_KEY');
 const calendarId = defineString('GOOGLE_CALENDAR_ID', { default: 'primary' });
-const serviceAccountKey = defineString('GOOGLE_SERVICE_ACCOUNT_KEY');
+const firebaseServiceAccountKey = defineString('FIREBASE_SERVICE_ACCOUNT_KEY', { default: '' });
 
 const businessEmail = 'contact@elev8texas.com';
 
@@ -28,23 +25,37 @@ const getTransporter = () => {
 });
 };
 
-// Initialize Google Calendar API
+// Initialize Google Calendar API with Google Cloud Console API key
 const getCalendarAuth = () => {
-  if (serviceAccountKey.value()) {
-    // Use service account for server-side authentication
-    const credentials = JSON.parse(serviceAccountKey.value());
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/calendar']
-    });
-    return auth;
-  } else if (googleApiKey.value()) {
-    // Fallback to API key (limited functionality)
-    google.options({ auth: googleApiKey.value() });
-    return googleApiKey.value();
+  if (!googleApiKey.value()) {
+    throw new Error('Google API key not configured. Please set GOOGLE_API_KEY parameter.');
   }
-  throw new Error('Google Calendar authentication not configured');
+  
+  // Use API key from Google Cloud Console
+  return googleApiKey.value();
 };
+
+// Initialize Firebase Admin with service account (automatically uses service account in Firebase environment)
+if (firebaseServiceAccountKey.value()) {
+  // Use explicit service account if provided
+  try {
+    const firebaseCredentials = JSON.parse(firebaseServiceAccountKey.value());
+    admin.initializeApp({
+      credential: admin.credential.cert(firebaseCredentials),
+      databaseURL: `https://${firebaseCredentials.project_id}-default-rtdb.firebaseio.com`
+    });
+    console.log('Firebase Admin initialized with explicit service account');
+  } catch (error) {
+    console.error('Error parsing Firebase service account credentials:', error);
+    // Fallback to default initialization
+    admin.initializeApp();
+    console.log('Firebase Admin initialized with default service account');
+  }
+} else {
+  // Use default service account (recommended for Firebase Functions)
+  admin.initializeApp();
+  console.log('Firebase Admin initialized with default service account');
+}
 
 // Create calendar event
 export const createCalendarEvent = onCall(async (request) => {
@@ -64,8 +75,8 @@ export const createCalendarEvent = onCall(async (request) => {
       throw new HttpsError('invalid-argument', 'Missing required fields');
     }
 
-    const auth = getCalendarAuth();
-    const calendar = google.calendar({ version: 'v3', auth });
+    const apiKey = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth: apiKey });
 
     const event = {
       summary: `${service} - ${customerName}`,
@@ -106,7 +117,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
       location: address || '',
     };
 
-    // Properly structure the API call for googleapis v131
+    // API call structure for Google Calendar API with API key
     const insertParams = {
       calendarId: calendarId.value(),
       resource: event,
@@ -161,8 +172,8 @@ export const getAvailableTimeSlots = onCall(async (request) => {
       throw new HttpsError('invalid-argument', 'Date is required');
     }
 
-    const auth = getCalendarAuth();
-    const calendar = google.calendar({ version: 'v3', auth });
+    const apiKey = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth: apiKey });
 
     const startOfDay = new Date(date);
     startOfDay.setHours(7, 0, 0, 0); // 7 AM start
@@ -248,8 +259,8 @@ export const updateAppointmentStatus = onCall(async (request) => {
     // If cancelling, also delete the calendar event
     if (status === 'cancelled' && calendarEventId) {
       try {
-        const auth = getCalendarAuth();
-        const calendar = google.calendar({ version: 'v3', auth });
+        const apiKey = getCalendarAuth();
+        const calendar = google.calendar({ version: 'v3', auth: apiKey });
         
         await calendar.events.delete({
           calendarId: calendarId.value(),
