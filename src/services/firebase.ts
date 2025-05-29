@@ -35,6 +35,9 @@ export interface QuoteFormData {
   propertyType: string;
   squareFootage?: number;
   windowCount?: number;
+  solarPanelCount?: number;
+  stories?: string;
+  recurringService?: string;
   additionalDetails?: string;
 }
 
@@ -177,6 +180,9 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
         propertyType: formData.propertyType,
         squareFootage: formData.squareFootage,
         windowCount: formData.windowCount,
+        solarPanelCount: formData.solarPanelCount,
+        stories: formData.stories,
+        recurringService: formData.recurringService,
         additionalDetails: formData.additionalDetails
       }
     };

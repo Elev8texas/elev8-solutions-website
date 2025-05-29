@@ -15,6 +15,7 @@ const Quote: React.FC = () => {
     // Step 2: Project Dimensions
     squareFootage: '',
     windowCount: '',
+    solarPanelCount: '',
     stories: '1',
     propertyType: '',
     additionalDetails: '',
@@ -43,49 +44,64 @@ const Quote: React.FC = () => {
       id: 'window-washing',
       name: 'Window Washing',
       description: 'Professional interior and exterior window cleaning',
-      basePrice: 150,
-      icon: '🪟',
-      priceUnit: 'per service'
+      basePrice: 0, // Calculated based on windows and floors
+      priceUnit: 'per window',
+      requiresWindows: true
     },
     {
       id: 'pressure-washing',
       name: 'Pressure Washing',
       description: 'High-pressure cleaning for driveways, sidewalks, and exteriors',
-      basePrice: 200,
-      icon: '💧',
-      priceUnit: 'per service'
+      basePrice: 0, // Calculated based on sq/ft
+      priceUnit: 'per sq/ft',
+      requiresSquareFootage: true
     },
     {
-      id: 'roof-gutter',
-      name: 'Roof & Gutter Cleaning',
-      description: 'Complete roof and gutter cleaning and maintenance',
-      basePrice: 300,
-      icon: '🏠',
+      id: 'roof-cleaning',
+      name: 'Roof Cleaning',
+      description: 'Professional soft washing for roof cleaning and maintenance',
+      basePrice: 0, // Calculated based on sq/ft
+      priceUnit: 'per sq/ft',
+      requiresSquareFootage: true
+    },
+    {
+      id: 'gutter-cleaning',
+      name: 'Gutter Cleaning',
+      description: 'Complete gutter cleaning and maintenance service',
+      basePrice: 150, // Base price for gutter cleaning
       priceUnit: 'per service'
     },
     {
       id: 'solar-panel',
       name: 'Solar Panel Cleaning',
       description: 'Specialized solar panel cleaning for maximum efficiency',
-      basePrice: 120,
-      icon: '☀️',
-      priceUnit: 'per service'
+      basePrice: 0, // Calculated based on panel count
+      priceUnit: 'per panel',
+      requiresPanels: true
     },
     {
       id: 'exterior-cleaning',
-      name: 'Exterior Cleaning',
-      description: 'Complete exterior house washing and cleaning',
-      basePrice: 250,
-      icon: '🏡',
-      priceUnit: 'per service'
+      name: 'Exterior Home Soft Washing',
+      description: 'Complete exterior house soft washing and cleaning',
+      basePrice: 0, // Calculated based on sq/ft
+      priceUnit: 'per sq/ft',
+      requiresSquareFootage: true
     },
     {
       id: 'deck-patio',
       name: 'Deck/Patio Cleaning',
       description: 'Deep cleaning and restoration of outdoor living spaces',
-      basePrice: 180,
-      icon: '🪵',
-      priceUnit: 'per service'
+      basePrice: 0, // Calculated based on sq/ft
+      priceUnit: 'per sq/ft',
+      requiresSquareFootage: true
+    },
+    {
+      id: 'driveway-cleaning',
+      name: 'Driveway Cleaning',
+      description: 'Professional pressure washing for driveways and walkways',
+      basePrice: 0, // Calculated based on sq/ft
+      priceUnit: 'per sq/ft',
+      requiresSquareFootage: true
     }
   ];
 
@@ -147,19 +163,67 @@ const Quote: React.FC = () => {
     }
   };
 
-  // Calculate pricing
+  // Calculate pricing based on detailed requirements
   const calculatePricing = () => {
     const selectedServiceObjects = services.filter(s => formData.selectedServices.includes(s.id));
-    const baseTotal = selectedServiceObjects.reduce((sum, service) => sum + service.basePrice, 0);
+    let baseTotal = 0;
     
-    // Size multiplier based on square footage
-    const sqft = parseInt(formData.squareFootage) || 1500; // default
-    const sizeMultiplier = Math.max(0.8, Math.min(2.0, sqft / 1500)); // 0.8x to 2.0x
+    const sqft = parseInt(formData.squareFootage) || 0;
+    const windowCount = parseInt(formData.windowCount) || 0;
+    const solarPanelCount = parseInt(formData.solarPanelCount) || 0;
+    const stories = parseInt(formData.stories) || 1;
     
-    // Story multiplier
-    const storyMultiplier = parseInt(formData.stories) === 1 ? 1 : 1.3;
+    // Calculate price for each selected service
+    selectedServiceObjects.forEach(service => {
+      switch (service.id) {
+        case 'window-washing':
+          // $6-10 per window based on floor (1st floor = $6, ascending floors = $10)
+          const firstFloorWindows = Math.min(windowCount, Math.ceil(windowCount / stories));
+          const upperFloorWindows = windowCount - firstFloorWindows;
+          baseTotal += (firstFloorWindows * 6) + (upperFloorWindows * 10);
+          break;
+          
+        case 'pressure-washing':
+        case 'driveway-cleaning':
+          // Pressure washing: $0.55/sqft (<600), $0.50/sqft (600-1000), $0.45/sqft (>1000)
+          if (sqft < 600) {
+            baseTotal += sqft * 0.55;
+          } else if (sqft <= 1000) {
+            baseTotal += sqft * 0.50;
+          } else {
+            baseTotal += sqft * 0.45;
+          }
+          break;
+          
+        case 'roof-cleaning':
+        case 'exterior-cleaning':
+        case 'deck-patio':
+          // Soft washing: $0.55/sqft (<2000), $0.50/sqft (2000-3999), $0.45/sqft (>4000)
+          if (sqft < 2000) {
+            baseTotal += sqft * 0.55;
+          } else if (sqft <= 3999) {
+            baseTotal += sqft * 0.50;
+          } else {
+            baseTotal += sqft * 0.45;
+          }
+          break;
+          
+        case 'solar-panel':
+          // $15 per panel
+          baseTotal += solarPanelCount * 15;
+          break;
+          
+        case 'gutter-cleaning':
+          // Fixed price
+          baseTotal += service.basePrice;
+          break;
+          
+        default:
+          baseTotal += service.basePrice;
+      }
+    });
     
-    const adjustedTotal = baseTotal * sizeMultiplier * storyMultiplier;
+    const adjustedTotal = baseTotal;
     
     // Multi-service discount (10% for 2+ services)
     const multiServiceDiscount = formData.selectedServices.length >= 2 ? 0.10 : 0;
@@ -180,6 +244,27 @@ const Quote: React.FC = () => {
       finalTotal,
       selectedServices: selectedServiceObjects
     };
+  };
+
+  // Get display price for service cards
+  const getServiceDisplayPrice = (service: any) => {
+    switch (service.id) {
+      case 'window-washing':
+        return '$6-10';
+      case 'pressure-washing':
+      case 'driveway-cleaning':
+        return '$0.45-0.55';
+      case 'roof-cleaning':
+      case 'exterior-cleaning':
+      case 'deck-patio':
+        return '$0.45-0.55';
+      case 'solar-panel':
+        return '$15';
+      case 'gutter-cleaning':
+        return '$150';
+      default:
+        return 'Quote';
+    }
   };
 
   const nextStep = () => {
@@ -212,6 +297,9 @@ const Quote: React.FC = () => {
         propertyType: formData.propertyType,
         squareFootage: formData.squareFootage ? parseInt(formData.squareFootage) : undefined,
         windowCount: formData.windowCount ? parseInt(formData.windowCount) : undefined,
+        solarPanelCount: formData.solarPanelCount ? parseInt(formData.solarPanelCount) : undefined,
+        stories: formData.stories,
+        recurringService: formData.recurringService,
         additionalDetails: `${formData.additionalDetails}\n\nQuote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Total: $${pricing.finalTotal.toFixed(2)}`
       };
 
@@ -250,6 +338,7 @@ const Quote: React.FC = () => {
         selectedServices: [],
         squareFootage: '',
         windowCount: '',
+        solarPanelCount: '',
         stories: '1',
         propertyType: '',
         additionalDetails: '',
@@ -390,11 +479,10 @@ const Quote: React.FC = () => {
                       }`}
                     >
                       <div className="text-center">
-                        <div className="text-4xl mb-3">{service.icon}</div>
                         <h3 className="text-lg font-semibold text-text-primary mb-2">{service.name}</h3>
                         <p className="text-sm text-text-secondary mb-4">{service.description}</p>
                         <div className="text-xl font-bold text-gold-500">
-                          ${service.basePrice}
+                          {getServiceDisplayPrice(service)}
                           <span className="text-sm text-text-muted ml-1">{service.priceUnit}</span>
                         </div>
                       </div>
@@ -501,6 +589,21 @@ const Quote: React.FC = () => {
                 </div>
                 
                 <div>
+                  <label htmlFor="solarPanelCount" className="block text-sm font-medium text-text-primary mb-2">
+                    Number of Solar Panels (optional)
+                  </label>
+                  <input
+                    type="number"
+                    id="solarPanelCount"
+                    name="solarPanelCount"
+                    value={formData.solarPanelCount}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
+                    placeholder="e.g., 20"
+                  />
+                </div>
+                
+                <div>
                   <label htmlFor="additionalDetails" className="block text-sm font-medium text-text-primary mb-2">
                     Additional Details
                   </label>
@@ -553,7 +656,7 @@ const Quote: React.FC = () => {
                           {pricing.selectedServices.map((service) => (
                             <div key={service.id} className="flex justify-between items-center">
                               <span className="text-text-primary">{service.name}</span>
-                              <span className="text-gold-500 font-medium">${service.basePrice}</span>
+                              <span className="text-gold-500 font-medium">{getServiceDisplayPrice(service)}</span>
                             </div>
                           ))}
                         </div>
