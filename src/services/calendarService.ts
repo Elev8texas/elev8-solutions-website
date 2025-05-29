@@ -1,21 +1,8 @@
 // Calendar service for appointment booking
 // Uses Google Calendar API with Firebase Functions for real-time integration
 
-import { initializeApp, getApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-
-// Get the default Firebase app instance
-let app;
-try {
-  app = getApp();
-} catch {
-  // If no default app exists, we'll create one, but this shouldn't happen
-  // since firebase.ts already initializes it
-  console.warn('No default Firebase app found, using basic configuration');
-  app = initializeApp({
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID
-  });
-}
+import { app } from './firebase';
 
 const functions = getFunctions(app);
 
@@ -132,22 +119,33 @@ export const generateTimeSlots = (date: string): TimeSlot[] => {
 
 // Get available time slots from Firebase Functions (real Google Calendar data)
 export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> => {
+  console.log('📅 Fetching available time slots for date:', date);
+  
   try {
     const getAvailableSlots = httpsCallable(functions, 'getAvailableTimeSlots');
+    console.log('🔧 Firebase Functions endpoint:', getAvailableSlots);
+    
     const result = await getAvailableSlots({ date });
+    console.log('✅ Firebase Functions response:', result);
     
     if (result.data && Array.isArray(result.data)) {
       return result.data as TimeSlot[];
     }
     
     // Fallback to generated slots if Firebase function fails
-    console.warn('Firebase function returned unexpected data, using fallback');
+    console.warn('⚠️ Firebase function returned unexpected data, using fallback');
     return generateTimeSlots(date);
     
   } catch (error) {
-    console.error('Error fetching available time slots from Firebase:', error);
+    console.error('❌ Error fetching available time slots from Firebase:', error);
+    console.error('Error details:', {
+      name: (error as any)?.name,
+      message: (error as any)?.message,
+      code: (error as any)?.code
+    });
     
     // Fallback to local generation with mock availability
+    console.log('🔄 Using fallback time slot generation');
     const slots = generateTimeSlots(date);
     return slots.map(slot => ({
       ...slot,
@@ -158,9 +156,14 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
 
 // Create appointment via Firebase Functions (real Google Calendar integration)
 export const createAppointment = async (appointmentData: AppointmentData): Promise<string> => {
+  console.log('📝 Creating appointment:', appointmentData);
+  
   try {
     const createCalendarEvent = httpsCallable(functions, 'createCalendarEvent');
+    console.log('🔧 Firebase Functions endpoint:', createCalendarEvent);
+    
     const result = await createCalendarEvent(appointmentData);
+    console.log('✅ Firebase Functions response:', result);
     
     if (result.data && typeof result.data === 'object' && 'eventId' in result.data) {
       return result.data.eventId as string;
@@ -169,10 +172,15 @@ export const createAppointment = async (appointmentData: AppointmentData): Promi
     throw new Error('Invalid response from calendar service');
     
   } catch (error) {
-    console.error('Error creating appointment via Firebase:', error);
+    console.error('❌ Error creating appointment via Firebase:', error);
+    console.error('Error details:', {
+      name: (error as any)?.name,
+      message: (error as any)?.message,
+      code: (error as any)?.code
+    });
     
     // For development/fallback - don't actually fail
-    console.log('Fallback: Simulating appointment creation:', appointmentData);
+    console.log('🔄 Fallback: Simulating appointment creation');
     return `fallback_apt_${Date.now()}`;
   }
 };

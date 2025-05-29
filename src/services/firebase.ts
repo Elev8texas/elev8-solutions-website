@@ -1,19 +1,32 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
 
-// Firebase configuration - Replace with your actual config
+// Debug logging for environment variables
+console.log('🔧 Firebase Environment Variables Check:');
+console.log('REACT_APP_FIREBASE_PROJECT_ID:', process.env.REACT_APP_FIREBASE_PROJECT_ID);
+console.log('REACT_APP_FIREBASE_API_KEY:', process.env.REACT_APP_FIREBASE_API_KEY ? 'Set' : 'Missing');
+console.log('REACT_APP_FIREBASE_AUTH_DOMAIN:', process.env.REACT_APP_FIREBASE_AUTH_DOMAIN);
+
+// Firebase configuration with fallback values
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || 'AIzaSyB3Jbp_rzRStkUGRVG1om_noB_l9dECMGM',
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || 'elev8-website-a155a.firebaseapp.com',
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || 'elev8-website-a155a',
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || 'elev8-website-a155a.firebasestorage.app',
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || '962598553444',
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || '1:962598553444:web:b32d17e628dadcee751c71'
 };
+
+console.log('🔥 Initializing Firebase with config:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  apiKey: firebaseConfig.apiKey ? 'Set' : 'Missing'
+});
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export { app }; // Export app for use in other services
 
 // Types for form data
 export interface ContactFormData {
@@ -306,6 +319,4 @@ export const saveCommercialForm = async (formData: CommercialFormData) => {
     console.error('Error saving commercial inquiry:', error);
     throw error;
   }
-};
-
-export default app; 
+}; 
