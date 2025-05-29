@@ -293,17 +293,17 @@ const Quote: React.FC = () => {
     try {
       const pricing = calculatePricing();
       
-      // Prepare data for Firebase
-      const quoteData: QuoteFormData = {
+      // Prepare quote data for submission
+      const quoteData = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
         services: formData.selectedServices,
         propertyType: formData.propertyType,
-        squareFootage: formData.squareFootage ? parseInt(formData.squareFootage) : undefined,
-        windowCount: formData.windowCount ? parseInt(formData.windowCount) : undefined,
-        solarPanelCount: formData.solarPanelCount ? parseInt(formData.solarPanelCount) : undefined,
+        ...(formData.squareFootage && { squareFootage: parseInt(formData.squareFootage) }),
+        ...(formData.windowCount && { windowCount: parseInt(formData.windowCount) }),
+        ...(formData.solarPanelCount && { solarPanelCount: parseInt(formData.solarPanelCount) }),
         stories: formData.stories,
         recurringService: formData.recurringService,
         additionalDetails: `${formData.additionalDetails}\n\nQuote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Total: $${pricing.finalTotal.toFixed(2)}`
@@ -317,7 +317,7 @@ const Quote: React.FC = () => {
       if (formData.preferredDate && formData.preferredTime) {
         try {
           const startTime = new Date(formData.preferredTime);
-          const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour later
+          const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
           
           const appointmentData: AppointmentData = {
             customerName: formData.name,
