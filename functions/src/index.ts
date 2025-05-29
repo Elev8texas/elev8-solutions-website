@@ -8,8 +8,8 @@ import { defineString } from 'firebase-functions/params';
 // Define configuration parameters
 const gmailEmail = defineString('GMAIL_EMAIL');
 const gmailPassword = defineString('GMAIL_PASSWORD');
-const googleApiKey = defineString('GOOGLE_API_KEY');
 const calendarId = defineString('GOOGLE_CALENDAR_ID', { default: 'primary' });
+const serviceAccountKey = defineString('GOOGLE_SERVICE_ACCOUNT_KEY');
 const firebaseServiceAccountKey = defineString('FIREBASE_SERVICE_ACCOUNT_KEY', { default: '' });
 
 const businessEmail = 'contact@elev8texas.com';
@@ -25,14 +25,23 @@ const getTransporter = () => {
 });
 };
 
-// Initialize Google Calendar API with Google Cloud Console API key
+// Initialize Google Calendar API with service account
 const getCalendarAuth = () => {
-  if (!googleApiKey.value()) {
-    throw new Error('Google API key not configured. Please set GOOGLE_API_KEY parameter.');
+  if (!serviceAccountKey.value()) {
+    throw new Error('Google service account key not configured. Please set GOOGLE_SERVICE_ACCOUNT_KEY parameter.');
   }
   
-  // Use API key from Google Cloud Console
-  return googleApiKey.value();
+  try {
+    const credentials = JSON.parse(serviceAccountKey.value());
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ['https://www.googleapis.com/auth/calendar']
+    });
+    return auth;
+  } catch (error) {
+    console.error('Error parsing service account credentials:', error);
+    throw new Error('Invalid Google service account key format');
+  }
 };
 
 // Initialize Firebase Admin with service account (automatically uses service account in Firebase environment)
@@ -75,8 +84,8 @@ export const createCalendarEvent = onCall(async (request) => {
       throw new HttpsError('invalid-argument', 'Missing required fields');
     }
 
-    const apiKey = getCalendarAuth();
-    const calendar = google.calendar({ version: 'v3', auth: apiKey });
+    const auth = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth });
 
     const event = {
       summary: `${service} - ${customerName}`,
@@ -172,8 +181,8 @@ export const getAvailableTimeSlots = onCall(async (request) => {
       throw new HttpsError('invalid-argument', 'Date is required');
     }
 
-    const apiKey = getCalendarAuth();
-    const calendar = google.calendar({ version: 'v3', auth: apiKey });
+    const auth = getCalendarAuth();
+    const calendar = google.calendar({ version: 'v3', auth });
 
     const startOfDay = new Date(date);
     startOfDay.setHours(7, 0, 0, 0); // 7 AM start
@@ -259,8 +268,8 @@ export const updateAppointmentStatus = onCall(async (request) => {
     // If cancelling, also delete the calendar event
     if (status === 'cancelled' && calendarEventId) {
       try {
-        const apiKey = getCalendarAuth();
-        const calendar = google.calendar({ version: 'v3', auth: apiKey });
+        const auth = getCalendarAuth();
+        const calendar = google.calendar({ version: 'v3', auth });
         
         await calendar.events.delete({
           calendarId: calendarId.value(),
