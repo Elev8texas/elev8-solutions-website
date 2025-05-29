@@ -146,7 +146,8 @@ export const saveContactForm = async (formData: ContactFormData) => {
       status: 'new',
       additionalInfo: {
         message: formData.message,
-        urgency: formData.urgency
+        // Only include urgency if it's defined
+        ...(formData.urgency && { urgency: formData.urgency })
       }
     };
     
@@ -250,7 +251,8 @@ export const saveBundleSelection = async (bundleName: string, customerInfo: any)
         status: 'new',
         additionalInfo: {
           bundleName,
-          ...customerInfo
+          // Filter out undefined values from customerInfo
+          ...Object.fromEntries(Object.entries(customerInfo).filter(([_, v]) => v !== undefined && v !== null && v !== ''))
         }
       };
       
@@ -288,7 +290,8 @@ export const saveServiceBooking = async (serviceName: string, customerInfo: any)
         status: 'new',
         additionalInfo: {
           serviceName,
-          ...customerInfo
+          // Filter out undefined values from customerInfo
+          ...Object.fromEntries(Object.entries(customerInfo).filter(([_, v]) => v !== undefined && v !== null && v !== ''))
         }
       };
       
