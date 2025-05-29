@@ -121,100 +121,25 @@ export const generateTimeSlots = (date: string): TimeSlot[] => {
 export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> => {
   console.log('📅 Fetching available time slots for date:', date);
   
-  try {
-    const getAvailableSlots = httpsCallable(functions, 'getAvailableTimeSlots');
-    console.log('🔧 Firebase Functions endpoint:', getAvailableSlots);
-    
-    const result = await getAvailableSlots({ date });
-    console.log('✅ Firebase Functions response:', result);
-    
-    // Handle both wrapped object format { timeSlots: [...] } and direct array format
-    if (result.data && typeof result.data === 'object' && 'timeSlots' in result.data && Array.isArray((result.data as any).timeSlots)) {
-      console.log('📋 Using timeSlots from Firebase Functions response');
-      return (result.data as any).timeSlots as TimeSlot[];
-    }
-    
-    if (result.data && Array.isArray(result.data)) {
-      console.log('📋 Using direct array from Firebase Functions response');
-      return result.data as TimeSlot[];
-    }
-    
-    // If we get here, the response format is unexpected
-    throw new Error('Unexpected response format from Firebase Functions');
-    
-  } catch (error) {
-    console.error('❌ Error fetching available time slots from Firebase:', error);
-    console.error('Error details:', {
-      name: (error as any)?.name,
-      message: (error as any)?.message,
-      code: (error as any)?.code
-    });
-    
-    // Always fallback to local generation - this is the critical fix
-    console.log('🔄 Using fallback time slot generation');
-    return generateFallbackTimeSlots(date);
-  }
-};
-
-// Enhanced fallback function with better availability simulation
-export const generateFallbackTimeSlots = (date: string): TimeSlot[] => {
-  console.log('🏠 Generating fallback time slots for:', date);
+  const getAvailableSlots = httpsCallable(functions, 'getAvailableTimeSlots');
+  console.log('🔧 Firebase Functions endpoint:', getAvailableSlots);
   
-  const selectedDate = new Date(date);
-  const { start, end } = getBusinessHours(selectedDate);
+  const result = await getAvailableSlots({ date });
+  console.log('✅ Firebase Functions response:', result);
   
-  // No slots if outside business hours
-  if (start.getTime() === end.getTime()) {
-    console.log('⏰ No business hours for this date');
-    return [];
+  // Handle both wrapped object format { timeSlots: [...] } and direct array format
+  if (result.data && typeof result.data === 'object' && 'timeSlots' in result.data && Array.isArray((result.data as any).timeSlots)) {
+    console.log('📋 Using timeSlots from Firebase Functions response');
+    return (result.data as any).timeSlots as TimeSlot[];
   }
   
-  const timeSlots: TimeSlot[] = [];
-  const current = new Date(start);
-  
-  // Generate 2-hour time slots
-  while (current < end) {
-    const slotStart = new Date(current);
-    const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2 hour slots
-    
-    // Don't create slots that extend beyond business hours
-    if (slotEnd <= end) {
-      // Simulate realistic availability based on time of day and day of week
-      const hour = slotStart.getHours();
-      const dayOfWeek = slotStart.getDay();
-      
-      let availabilityChance = 0.8; // Base 80% availability
-      
-      // Adjust availability based on popular times
-      if (hour >= 10 && hour <= 14) { // Mid-day slots less available
-        availabilityChance = 0.6;
-      }
-      if (dayOfWeek === 6) { // Saturday less available
-        availabilityChance = 0.5;
-      }
-      if (dayOfWeek === 0) { // Sunday (emergency only)
-        availabilityChance = 0.2;
-      }
-      
-      timeSlots.push({
-        start: slotStart.toISOString(),
-        end: slotEnd.toISOString(),
-        available: Math.random() < availabilityChance
-      });
-    }
-    
-    current.setHours(current.getHours() + 2); // Increment by 2 hours
+  if (result.data && Array.isArray(result.data)) {
+    console.log('📋 Using direct array from Firebase Functions response');
+    return result.data as TimeSlot[];
   }
   
-  // Ensure at least one slot is available (unless it's Sunday emergency only)
-  if (timeSlots.length > 0 && timeSlots.every(slot => !slot.available) && selectedDate.getDay() !== 0) {
-    // Make the first slot available
-    timeSlots[0].available = true;
-    console.log('🎯 Ensured at least one slot is available');
-  }
-  
-  console.log(`📋 Generated ${timeSlots.length} fallback time slots (${timeSlots.filter(s => s.available).length} available)`);
-  return timeSlots;
+  // If we get here, the response format is unexpected
+  throw new Error('Unexpected response format from Firebase Functions');
 };
 
 // Create appointment via Firebase Functions (real Google Calendar integration)
@@ -277,6 +202,5 @@ export default {
   getBusinessHours,
   isWithinBusinessHours,
   isValidBookingDate,
-  generateTimeSlots,
-  generateFallbackTimeSlots
+  generateTimeSlots
 }; 
