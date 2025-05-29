@@ -33,15 +33,19 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
+exports.updateAppointmentStatus = exports.createCalendarEvent = exports.getAvailableTimeSlots = exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
+const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const admin = __importStar(require("firebase-admin"));
 const nodemailer = __importStar(require("nodemailer"));
 const params_1 = require("firebase-functions/params");
+const googleapis_1 = require("googleapis");
 // Define configuration parameters
 const gmailEmail = (0, params_1.defineString)('GMAIL_EMAIL');
 const gmailPassword = (0, params_1.defineString)('GMAIL_PASSWORD');
-const firebaseServiceAccountKey = (0, params_1.defineString)('FIREBASE_SERVICE_ACCOUNT_KEY', { default: '' });
+const googleCalendarId = (0, params_1.defineString)('GOOGLE_CALENDAR_ID');
+const googleClientEmail = (0, params_1.defineString)('GOOGLE_CLIENT_EMAIL');
+const googlePrivateKey = (0, params_1.defineString)('GOOGLE_PRIVATE_KEY');
 const businessEmail = 'contact@elev8texas.com';
 // Create reusable transporter object using Gmail
 const getTransporter = () => {
@@ -53,20 +57,14 @@ const getTransporter = () => {
         },
     });
 };
-// Initialize Firebase Admin with service account (automatically uses service account in Firebase environment)
+// Get Google Calendar authentication
+const getCalendarAuth = () => {
+    const auth = new googleapis_1.google.auth.JWT(googleClientEmail.value(), undefined, googlePrivateKey.value().replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/calendar']);
+    return auth;
+};
+// Initialize Firebase Admin (uses default service account in Firebase Functions environment)
 if (!admin.apps.length) {
-    if (firebaseServiceAccountKey.value()) {
-        // Use custom service account if provided
-        const serviceAccount = JSON.parse(firebaseServiceAccountKey.value());
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: "https://elev8-website-a155a-default-rtdb.firebaseio.com"
-        });
-    }
-    else {
-        // Use default service account (recommended for Firebase Functions)
-        admin.initializeApp();
-    }
+    admin.initializeApp();
 }
 // Email notification functions
 exports.sendEmailNotification = (0, firestore_1.onDocumentCreated)('emails/{docId}', async (event) => {
@@ -107,18 +105,19 @@ exports.sendAppointmentNotification = (0, firestore_1.onDocumentCreated)('appoin
         const businessMailOptions = {
             from: gmailEmail.value(),
             to: businessEmail,
-            subject: `New Appointment Scheduled - ${appointmentData.service}`,
+            subject: `New Appointment Scheduled - ${Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services || appointmentData.service}`,
             html: `
           <h2>New Appointment Scheduled</h2>
           <p><strong>Appointment ID:</strong> ${appointmentId}</p>
           <p><strong>Customer:</strong> ${appointmentData.customerName}</p>
           <p><strong>Email:</strong> ${appointmentData.customerEmail}</p>
           <p><strong>Phone:</strong> ${appointmentData.customerPhone}</p>
-          <p><strong>Service:</strong> ${appointmentData.service}</p>
+          <p><strong>Service(s):</strong> ${Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services || appointmentData.service}</p>
           <p><strong>Start Time:</strong> ${appointmentData.startTime.toDate()}</p>
           <p><strong>End Time:</strong> ${appointmentData.endTime.toDate()}</p>
           <p><strong>Address:</strong> ${appointmentData.address}</p>
           <p><strong>Status:</strong> ${appointmentData.status}</p>
+          ${appointmentData.notes ? `<p><strong>Notes:</strong> ${appointmentData.notes}</p>` : ''}
           
           <hr>
           <p><em>This is an automated notification from your Elev8 website.</em></p>
@@ -357,6 +356,195 @@ exports.onCommercialInquiryCreated = (0, firestore_1.onDocumentCreated)('commerc
     }
     catch (error) {
         console.error('Error sending commercial inquiry notification:', error);
+    }
+});
+// Calendar Functions for appointment booking
+// Get available time slots
+exports.getAvailableTimeSlots = (0, https_1.onCall)(async (request) => {
+    try {
+        const { date } = request.data;
+        if (!date) {
+            throw new https_1.HttpsError('invalid-argument', 'Date is required');
+        }
+        const auth = getCalendarAuth();
+        const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
+        const startOfDay = new Date(date);
+        startOfDay.setHours(7, 0, 0, 0); // 7 AM start
+        const endOfDay = new Date(date);
+        endOfDay.setHours(18, 0, 0, 0); // 6 PM end
+        // Adjust for Saturday hours (8 AM - 4 PM)
+        if (startOfDay.getDay() === 6) {
+            startOfDay.setHours(8, 0, 0, 0);
+            endOfDay.setHours(16, 0, 0, 0);
+        }
+        // No regular hours on Sunday
+        if (startOfDay.getDay() === 0) {
+            return { timeSlots: [] };
+        }
+        // Get existing events
+        const response = await calendar.events.list({
+            calendarId: googleCalendarId.value(),
+            timeMin: startOfDay.toISOString(),
+            timeMax: endOfDay.toISOString(),
+            singleEvents: true,
+            orderBy: 'startTime',
+        });
+        const existingEvents = response.data.items || [];
+        // Generate time slots (2-hour intervals to match frontend)
+        const timeSlots = [];
+        const current = new Date(startOfDay);
+        while (current < endOfDay) {
+            const slotStart = new Date(current);
+            const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2 hour slots
+            // Don't create slots that extend beyond business hours
+            if (slotEnd <= endOfDay) {
+                // Check if this slot conflicts with existing events
+                const isAvailable = !existingEvents.some((event) => {
+                    var _a, _b;
+                    if (!((_a = event.start) === null || _a === void 0 ? void 0 : _a.dateTime) || !((_b = event.end) === null || _b === void 0 ? void 0 : _b.dateTime))
+                        return false;
+                    const eventStart = new Date(event.start.dateTime);
+                    const eventEnd = new Date(event.end.dateTime);
+                    return (slotStart < eventEnd && slotEnd > eventStart);
+                });
+                timeSlots.push({
+                    start: slotStart.toISOString(),
+                    end: slotEnd.toISOString(),
+                    available: isAvailable
+                });
+            }
+            current.setHours(current.getHours() + 2); // Increment by 2 hours
+        }
+        return { timeSlots }; // Return wrapped in object to match frontend expectations
+    }
+    catch (error) {
+        console.error('Error fetching available time slots:', error);
+        throw new https_1.HttpsError('internal', 'Failed to fetch available time slots');
+    }
+});
+// Create calendar event and appointment
+exports.createCalendarEvent = (0, https_1.onCall)(async (request) => {
+    try {
+        const { customerName, customerEmail, customerPhone, services, startTime, endTime, address, notes } = request.data;
+        // Validate required fields
+        if (!customerName || !customerEmail || !services || !startTime || !endTime) {
+            throw new https_1.HttpsError('invalid-argument', 'Missing required fields');
+        }
+        const auth = getCalendarAuth();
+        const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
+        const serviceList = Array.isArray(services) ? services.join(', ') : services;
+        const event = {
+            summary: `${serviceList} - ${customerName}`,
+            description: `
+Service(s): ${serviceList}
+Customer: ${customerName}
+Phone: ${customerPhone || 'Not provided'}
+Email: ${customerEmail}
+${address ? `Address: ${address}` : ''}
+${notes ? `Notes: ${notes}` : ''}
+
+This appointment was automatically scheduled through the Elev8 Solutions website.
+      `.trim(),
+            start: {
+                dateTime: startTime,
+                timeZone: 'America/Chicago', // Central Time for Texas
+            },
+            end: {
+                dateTime: endTime,
+                timeZone: 'America/Chicago',
+            },
+            attendees: [
+                {
+                    email: customerEmail,
+                    displayName: customerName,
+                },
+                {
+                    email: businessEmail,
+                    displayName: 'Elev8 Solutions',
+                }
+            ],
+            reminders: {
+                useDefault: false,
+                overrides: [
+                    { method: 'email', minutes: 24 * 60 }, // 24 hours before
+                    { method: 'email', minutes: 60 }, // 1 hour before
+                ],
+            },
+            location: address || '',
+        };
+        const response = await calendar.events.insert({
+            calendarId: googleCalendarId.value(),
+            requestBody: event,
+            sendUpdates: 'all', // Send invitations to all attendees
+        });
+        const eventData = response.data;
+        // Save appointment to Firestore
+        const appointmentData = {
+            customerName,
+            customerEmail,
+            customerPhone: customerPhone || '',
+            services: Array.isArray(services) ? services : [services],
+            startTime: admin.firestore.Timestamp.fromDate(new Date(startTime)),
+            endTime: admin.firestore.Timestamp.fromDate(new Date(endTime)),
+            address: address || '',
+            notes: notes || '',
+            calendarEventId: eventData.id || '',
+            status: 'scheduled',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        const appointmentRef = await admin.firestore()
+            .collection('appointments')
+            .add(appointmentData);
+        console.log(`Calendar event created: ${eventData.id}`);
+        console.log(`Appointment saved: ${appointmentRef.id}`);
+        return {
+            success: true,
+            eventId: eventData.id,
+            appointmentId: appointmentRef.id
+        };
+    }
+    catch (error) {
+        console.error('Error creating calendar event:', error);
+        throw new https_1.HttpsError('internal', 'Failed to create calendar event');
+    }
+});
+// Update appointment status
+exports.updateAppointmentStatus = (0, https_1.onCall)(async (request) => {
+    try {
+        const { appointmentId, status, calendarEventId } = request.data;
+        if (!appointmentId || !status) {
+            throw new https_1.HttpsError('invalid-argument', 'Missing required fields');
+        }
+        // Update Firestore appointment
+        await admin.firestore()
+            .collection('appointments')
+            .doc(appointmentId)
+            .update({
+            status,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // If cancelling, also delete the calendar event
+        if (status === 'cancelled' && calendarEventId) {
+            try {
+                const auth = getCalendarAuth();
+                const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
+                await calendar.events.delete({
+                    calendarId: googleCalendarId.value(),
+                    eventId: calendarEventId,
+                    sendUpdates: 'all', // Notify attendees
+                });
+                console.log(`Calendar event deleted: ${calendarEventId}`);
+            }
+            catch (calendarError) {
+                console.error('Error deleting calendar event:', calendarError);
+                // Don't fail the whole operation if calendar deletion fails
+            }
+        }
+        return { success: true };
+    }
+    catch (error) {
+        console.error('Error updating appointment:', error);
+        throw new https_1.HttpsError('internal', 'Failed to update appointment');
     }
 });
 //# sourceMappingURL=index.js.map
