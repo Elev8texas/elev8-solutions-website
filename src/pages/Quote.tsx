@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
 import { Link } from 'react-router-dom';
 import { saveQuoteRequest, QuoteFormData } from '../services/firebase';
-import { getAvailableTimeSlots, createServiceAppointment, formatTimeSlot, TimeSlot } from '../services/googleCalendar';
+import CalendarBooking from '../components/CalendarBooking';
+import { createAppointment, AppointmentData } from '../services/calendarService';
 
 const Quote: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -32,8 +33,6 @@ const Quote: React.FC = () => {
     preferredTime: ''
   });
   
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -113,26 +112,6 @@ const Quote: React.FC = () => {
     'Other'
   ];
 
-  // Load available time slots when date changes
-  useEffect(() => {
-    if (formData.preferredDate) {
-      loadAvailableSlots(formData.preferredDate);
-    }
-  }, [formData.preferredDate]);
-
-  const loadAvailableSlots = async (date: string) => {
-    setLoadingSlots(true);
-    try {
-      const slots = await getAvailableTimeSlots(date);
-      setAvailableSlots(slots);
-    } catch (error) {
-      console.error('Error loading time slots:', error);
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -154,13 +133,12 @@ const Quote: React.FC = () => {
     }));
   };
 
-  const handleTimeSlotSelect = (slot: TimeSlot) => {
-    if (slot.available) {
-      setFormData(prev => ({
-        ...prev,
-        preferredTime: slot.start
-      }));
-    }
+  const handleDateTimeSelect = (date: string, time: string) => {
+    setFormData(prev => ({
+      ...prev,
+      preferredDate: date,
+      preferredTime: time
+    }));
   };
 
   // Check if required fields are filled based on selected services
@@ -341,15 +319,18 @@ const Quote: React.FC = () => {
           const startTime = new Date(formData.preferredTime);
           const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour later
           
-          await createServiceAppointment(
-            formData.name,
-            formData.email,
-            formData.phone,
-            formData.selectedServices.join(', '),
-            startTime.toISOString(),
-            endTime.toISOString(),
-            formData.address
-          );
+          const appointmentData: AppointmentData = {
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            services: formData.selectedServices,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            address: formData.address,
+            notes: `Quote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Total: $${pricing.finalTotal.toFixed(2)}`
+          };
+          
+          await createAppointment(appointmentData);
           
           console.log('Appointment scheduled successfully');
         } catch (calendarError) {
@@ -915,65 +896,11 @@ const Quote: React.FC = () => {
                 </div>
                 
                 {/* Appointment Scheduling */}
-                <div className="bg-background-secondary border border-border-primary rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-text-primary mb-4">Schedule Your Service (Optional)</h3>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label htmlFor="preferredDate" className="block text-sm font-medium text-text-primary mb-2">
-                        Preferred Date
-                      </label>
-                      <input
-                        type="date"
-                        id="preferredDate"
-                        name="preferredDate"
-                        value={formData.preferredDate}
-                        onChange={handleInputChange}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Available Time Slots */}
-                  {formData.preferredDate && (
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-4">
-                        Available Time Slots
-                      </label>
-                      {loadingSlots ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="ml-3 text-text-secondary">Loading available times...</span>
-                        </div>
-                      ) : availableSlots.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                          {availableSlots.map((slot, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              onClick={() => handleTimeSlotSelect(slot)}
-                              disabled={!slot.available}
-                              className={`p-3 rounded-lg border text-sm font-medium transition-all duration-300 ${
-                                formData.preferredTime === slot.start
-                                  ? 'bg-gold-500 text-white border-gold-500'
-                                  : slot.available
-                                  ? 'bg-background-primary border-border-primary text-text-primary hover:border-gold-500 hover:bg-background-secondary'
-                                  : 'bg-background-secondary border-border-primary text-text-muted cursor-not-allowed opacity-50'
-                              }`}
-                            >
-                              {formatTimeSlot(slot)}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-text-secondary">
-                          No available time slots for this date. Please choose another date or submit without scheduling.
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <CalendarBooking
+                  selectedDate={formData.preferredDate}
+                  selectedTime={formData.preferredTime}
+                  onDateTimeSelect={handleDateTimeSelect}
+                />
                 
                 {/* Error Message */}
                 {submitError && (
