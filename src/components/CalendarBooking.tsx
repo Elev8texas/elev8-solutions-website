@@ -71,7 +71,29 @@ const CalendarBooking: React.FC<CalendarBookingProps> = ({
 
   const handleTimeSelect = (slot: TimeSlot) => {
     if (!slot.available || !selectedDate) return;
-    onDateTimeSelect(selectedDate, slot.start);
+    
+    // Handle current backend format: { time: "07:00", available: true }
+    if ((slot as any).time) {
+      // Convert time to full datetime format for consistency
+      const selectedDateTime = new Date(selectedDate + 'T' + (slot as any).time + ':00');
+      onDateTimeSelect(selectedDate, selectedDateTime.toISOString());
+    } 
+    // Handle expected format: { start: "ISO_DATE", end: "ISO_DATE", available: true }
+    else if (slot.start) {
+      onDateTimeSelect(selectedDate, slot.start);
+    }
+  };
+
+  // Helper function to get the time value for comparison
+  const getSlotTimeValue = (slot: TimeSlot): string => {
+    if ((slot as any).time) {
+      // Convert time to full datetime format for consistency
+      const selectedDateTime = new Date(selectedDate + 'T' + (slot as any).time + ':00');
+      return selectedDateTime.toISOString();
+    } else if (slot.start) {
+      return slot.start;
+    }
+    return '';
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -221,7 +243,7 @@ const CalendarBooking: React.FC<CalendarBookingProps> = ({
                   disabled={!slot.available}
                   className={`
                     p-3 rounded-lg border text-sm font-medium transition-all duration-300
-                    ${selectedTime === slot.start
+                    ${selectedTime === getSlotTimeValue(slot)
                       ? 'bg-gold-500 text-white border-gold-500 shadow-gold-glow'
                       : slot.available
                       ? 'bg-background-primary border-border-primary text-text-primary hover:border-gold-500 hover:bg-background-card'

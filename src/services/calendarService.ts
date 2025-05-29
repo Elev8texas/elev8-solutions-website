@@ -6,7 +6,7 @@ import { app } from './firebase';
 
 const functions = getFunctions(app);
 
-// Function URLs for HTTP functions
+// Firebase Functions configuration
 const FUNCTION_BASE_URL = 'https://us-central1-elev8-website-a155a.cloudfunctions.net';
 
 export interface TimeSlot {
@@ -169,7 +169,7 @@ export const createAppointment = async (appointmentData: AppointmentData): Promi
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ data: appointmentData }),
+      body: JSON.stringify(appointmentData),
     });
 
     if (!response.ok) {
