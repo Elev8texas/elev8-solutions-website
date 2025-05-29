@@ -6,6 +6,9 @@ import { app } from './firebase';
 
 const functions = getFunctions(app);
 
+// Function URLs for HTTP functions
+const FUNCTION_BASE_URL = 'https://us-central1-elev8-website-a155a.cloudfunctions.net';
+
 export interface TimeSlot {
   start: string;
   end: string;
@@ -121,25 +124,39 @@ export const generateTimeSlots = (date: string): TimeSlot[] => {
 export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> => {
   console.log('📅 Fetching available time slots for date:', date);
   
-  const getAvailableSlots = httpsCallable(functions, 'getAvailableTimeSlots');
-  console.log('🔧 Firebase Functions endpoint:', getAvailableSlots);
-  
-  const result = await getAvailableSlots({ date });
-  console.log('✅ Firebase Functions response:', result);
-  
-  // Handle both wrapped object format { timeSlots: [...] } and direct array format
-  if (result.data && typeof result.data === 'object' && 'timeSlots' in result.data && Array.isArray((result.data as any).timeSlots)) {
-    console.log('📋 Using timeSlots from Firebase Functions response');
-    return (result.data as any).timeSlots as TimeSlot[];
+  try {
+    const response = await fetch(`${FUNCTION_BASE_URL}/getAvailableTimeSlots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ date }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Firebase Functions response:', result);
+    
+    // Handle both wrapped object format { timeSlots: [...] } and direct array format
+    if (result && typeof result === 'object' && 'timeSlots' in result && Array.isArray(result.timeSlots)) {
+      console.log('📋 Using timeSlots from Firebase Functions response');
+      return result.timeSlots as TimeSlot[];
+    }
+    
+    if (result && Array.isArray(result)) {
+      console.log('📋 Using direct array from Firebase Functions response');
+      return result as TimeSlot[];
+    }
+    
+    // If we get here, the response format is unexpected
+    throw new Error('Unexpected response format from Firebase Functions');
+  } catch (error) {
+    console.error('❌ Error fetching time slots:', error);
+    throw new Error('Failed to fetch available time slots');
   }
-  
-  if (result.data && Array.isArray(result.data)) {
-    console.log('📋 Using direct array from Firebase Functions response');
-    return result.data as TimeSlot[];
-  }
-  
-  // If we get here, the response format is unexpected
-  throw new Error('Unexpected response format from Firebase Functions');
 };
 
 // Create appointment via Firebase Functions (real Google Calendar integration)
@@ -147,14 +164,23 @@ export const createAppointment = async (appointmentData: AppointmentData): Promi
   console.log('📝 Creating appointment:', appointmentData);
   
   try {
-    const createCalendarEvent = httpsCallable(functions, 'createCalendarEvent');
-    console.log('🔧 Firebase Functions endpoint:', createCalendarEvent);
-    
-    const result = await createCalendarEvent(appointmentData);
+    const response = await fetch(`${FUNCTION_BASE_URL}/createCalendarEvent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ data: appointmentData }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
     console.log('✅ Firebase Functions response:', result);
     
-    if (result.data && typeof result.data === 'object' && 'eventId' in result.data) {
-      return result.data.eventId as string;
+    if (result && typeof result === 'object' && 'eventId' in result) {
+      return result.eventId as string;
     }
     
     throw new Error('Invalid response from calendar service');
