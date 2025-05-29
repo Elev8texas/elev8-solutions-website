@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateAppointmentStatus = exports.createCalendarEvent = exports.getAvailableTimeSlots = exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
+exports.testCORS = exports.updateAppointmentStatus = exports.createCalendarEvent = exports.getAvailableTimeSlots = exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const admin = __importStar(require("firebase-admin"));
@@ -550,5 +550,14 @@ exports.updateAppointmentStatus = (0, https_1.onCall)(corsOptions, async (reques
         console.error('Error updating appointment:', error);
         throw new https_1.HttpsError('internal', 'Failed to update appointment');
     }
+});
+// Simple test function to verify CORS configuration
+exports.testCORS = (0, https_1.onCall)(corsOptions, async (request) => {
+    console.log('CORS test function called');
+    return {
+        success: true,
+        message: 'CORS is working!',
+        timestamp: new Date().toISOString()
+    };
 });
 //# sourceMappingURL=index.js.map
