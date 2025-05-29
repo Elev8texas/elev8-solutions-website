@@ -134,8 +134,8 @@ const Quote: React.FC = () => {
   };
 
   const handleDateTimeSelect = (date: string, time: string) => {
-    setFormData(prev => ({
-      ...prev,
+      setFormData(prev => ({
+        ...prev,
       preferredDate: date,
       preferredTime: time
     }));

@@ -21,7 +21,7 @@ const CalendarBooking: React.FC<CalendarBookingProps> = ({
 
   // Load available time slots when date changes
   useEffect(() => {
-    if (selectedDate) {
+      if (selectedDate) {
       loadAvailableSlots(selectedDate);
     }
   }, [selectedDate]);
