@@ -411,33 +411,38 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
     const selectedDate = new Date(date + 'T00:00:00.000-06:00'); // Force Central Time
     console.log('Parsed selectedDate:', selectedDate.toISOString());
     
-    // Convert to Central Time for business hours calculation
-    const centralTime = new Date(selectedDate.toLocaleString("en-US", {timeZone: "America/Chicago"}));
-    const year = centralTime.getFullYear();
-    const month = centralTime.getMonth();
-    const day = centralTime.getDate();
-    const dayOfWeek = centralTime.getDay();
+    // Define business hours in Central Time
+    const dayOfWeek = selectedDate.getDay();
     
-    // Create business hours in Central Time
-    let startHour = 7; // 7 AM
-    let endHour = 18;   // 6 PM
+    let startHour = 9; // 9 AM Central
+    let endHour = 17;   // 5 PM Central
     
     if (dayOfWeek === 0) { // Sunday - closed
       res.status(200).json({ timeSlots: [] });
       return;
     } else if (dayOfWeek === 6) { // Saturday
-      startHour = 8;  // 8 AM
-      endHour = 16;   // 4 PM
+      startHour = 9;  // 9 AM Central
+      endHour = 17;   // 5 PM Central
     }
     
-    // Create start and end times in Central Time
-    const startOfDay = new Date(year, month, day, startHour, 0, 0, 0);
-    const endOfDay = new Date(year, month, day, endHour, 0, 0, 0);
+    // Create proper Central Time dates
+    // Central Time is UTC-6 (CST) or UTC-5 (CDT)
+    // For May 2025, we're in CDT (UTC-5)
+    const centralOffset = 5; // Hours to ADD to Central Time to get UTC
     
-    console.log('Business hours:', {
+    const [year, month, day] = date.split('-').map(Number);
+    
+    // Create the times: Central Time + offset = UTC Time
+    // 9 AM Central + 5 hours = 14:00 UTC (2 PM UTC)
+    const startOfDay = new Date(year, month - 1, day, startHour + centralOffset, 0, 0, 0);
+    const endOfDay = new Date(year, month - 1, day, endHour + centralOffset, 0, 0, 0);
+    
+    console.log('Business hours (Central Time converted to UTC):', {
       start: startOfDay.toISOString(),
       end: endOfDay.toISOString(),
-      dayOfWeek: dayOfWeek
+      dayOfWeek: dayOfWeek,
+      centralTimeStart: `${startHour}:00 Central`,
+      centralTimeEnd: `${endHour}:00 Central`
     });
 
     // Get existing events for the day
