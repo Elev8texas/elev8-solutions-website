@@ -595,16 +595,6 @@ This appointment was automatically scheduled through the Elev8 Solutions website
         dateTime: endTime,
         timeZone: 'America/Chicago',
       },
-      attendees: [
-        {
-          email: customerEmail,
-          displayName: customerName,
-        },
-        {
-          email: gmailEmail,
-          displayName: 'Elev8 Solutions',
-        }
-      ],
       reminders: {
         useDefault: false,
         overrides: [
@@ -618,7 +608,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
     const response = await calendar.events.insert({
       calendarId: googleCalendarId,
       requestBody: event,
-      sendUpdates: 'all', // Send invitations to all attendees
+      sendUpdates: 'none', // Don't send invitations
     });
 
     const eventData = response.data;
