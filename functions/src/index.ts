@@ -472,25 +472,15 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
           return (slotStart < eventEnd && slotEnd > eventStart);
         });
 
-        // Convert to Central Time for display (keep as local time, not UTC)
-        const centralSlotStart = new Date(slotStart.toLocaleString("en-US", {timeZone: "America/Chicago"}));
-        const centralSlotEnd = new Date(slotEnd.toLocaleString("en-US", {timeZone: "America/Chicago"}));
-        
-        // Format as ISO strings but represent Central Time
-        const startISO = slotStart.toISOString().replace('Z', '-05:00'); // Central Time offset
-        const endISO = slotEnd.toISOString().replace('Z', '-05:00');     // Central Time offset
-        
-        console.log('Generated slot:', {
-          start: startISO,
-          end: endISO,
+        // Return the times as ISO strings (the frontend will handle timezone display)
+        const slot = {
+          start: slotStart.toISOString(),
+          end: slotEnd.toISOString(),
           available: isAvailable
-        });
+        };
         
-        timeSlots.push({
-          start: startISO,
-          end: endISO,
-          available: isAvailable
-        });
+        console.log('Generated slot:', slot);
+        timeSlots.push(slot);
       }
       
       current.setHours(current.getHours() + 2); // Increment by 2 hours
