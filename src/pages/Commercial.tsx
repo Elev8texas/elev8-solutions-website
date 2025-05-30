@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
 import { saveCommercialForm, CommercialFormData } from '../services/firebase';
+import { scrollToTop } from '../components/ScrollToTop';
 
 const Commercial: React.FC = () => {
   const [formData, setFormData] = useState<CommercialFormData>({
@@ -13,7 +14,8 @@ const Commercial: React.FC = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -26,25 +28,49 @@ const Commercial: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitStatus('idle');
+    setSubmitError(null);
 
     try {
-      await saveCommercialForm(formData);
-      setSubmitStatus('success');
-      // Reset form
+      // Prepare data for Firebase - use the correct field names
+      const commercialData: CommercialFormData = {
+        businessName: formData.businessName,
+        contactName: formData.contactName,
+        phoneNumber: formData.phoneNumber,
+        businessAddress: formData.businessAddress
+      };
+
+      // Save to Firebase
+      const docId = await saveCommercialForm(commercialData);
+      console.log('Commercial form submitted successfully with ID:', docId);
+      
+      // Scroll to top BEFORE showing success state
+      scrollToTop('auto');
+      
+      // Show success state
+      setIsSubmitted(true);
+      
+      // Reset form after successful submission
       setFormData({
         businessName: '',
         contactName: '',
         phoneNumber: '',
         businessAddress: ''
       });
+
     } catch (error) {
       console.error('Error submitting commercial form:', error);
-      setSubmitStatus('error');
+      setSubmitError('There was an error submitting your request. Please try again or call us directly.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Ensure scroll to top when success page is shown
+  useEffect(() => {
+    if (isSubmitted) {
+      scrollToTop('auto');
+    }
+  }, [isSubmitted]);
 
   return (
     <div className="min-h-screen bg-background-primary">
@@ -107,18 +133,10 @@ const Commercial: React.FC = () => {
                   Get Your Free Commercial Quote
                 </h2>
                 
-                {submitStatus === 'success' && (
-                  <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <p className="text-green-400 text-sm">
-                      Thank you! We've received your commercial inquiry and will contact you within 24 hours.
-                    </p>
-                  </div>
-                )}
-
-                {submitStatus === 'error' && (
+                {submitError && (
                   <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                     <p className="text-red-400 text-sm">
-                      There was an error submitting your form. Please try again or call us directly.
+                      {submitError}
                     </p>
                   </div>
                 )}

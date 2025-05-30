@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
 import { saveContactForm, ContactFormData } from '../services/firebase';
+import { scrollToTop } from '../components/ScrollToTop';
 
 const ContactForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -50,6 +51,9 @@ const ContactForm: React.FC = () => {
       const docId = await saveContactForm(contactData);
       console.log('Help form submitted successfully with ID:', docId);
       
+      // Scroll to top BEFORE showing success state
+      scrollToTop('auto');
+      
       // Show success state
       setIsSubmitted(true);
       
@@ -69,6 +73,13 @@ const ContactForm: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Ensure scroll to top when success page is shown
+  useEffect(() => {
+    if (isSubmitted) {
+      scrollToTop('auto');
+    }
+  }, [isSubmitted]);
 
   if (isSubmitted) {
     return (
@@ -101,7 +112,10 @@ const ContactForm: React.FC = () => {
                   Back to Home
                 </Link>
                 <button
-                  onClick={() => setIsSubmitted(false)}
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    scrollToTop('smooth');
+                  }}
                   className="inline-block px-6 py-3 bg-background-secondary border border-border-primary text-text-primary hover:bg-background-card font-semibold rounded-lg transition-all duration-300"
                 >
                   Send Another Message

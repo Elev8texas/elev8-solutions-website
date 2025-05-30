@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
 import { Link } from 'react-router-dom';
-import { saveQuoteRequest, QuoteFormData } from '../services/firebase';
+import { saveQuoteRequest } from '../services/firebase';
 import CalendarBooking from '../components/CalendarBooking';
 import { createAppointment, AppointmentData } from '../services/calendarService';
+import { scrollToTop } from '../components/ScrollToTop';
 
 const Quote: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -277,12 +278,14 @@ const Quote: React.FC = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
+    scrollToTop();
   };
 
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+    scrollToTop();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -369,6 +372,13 @@ const Quote: React.FC = () => {
     }
   };
 
+  // Ensure scroll to top when success page is shown
+  useEffect(() => {
+    if (isSubmitted) {
+      scrollToTop('auto');
+    }
+  }, [isSubmitted]);
+
   // Success message component
   if (isSubmitted) {
     return (
@@ -396,7 +406,10 @@ const Quote: React.FC = () => {
                   Return Home
                 </Link>
                 <button 
-                  onClick={() => setIsSubmitted(false)}
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    scrollToTop('smooth');
+                  }}
                   className="inline-flex items-center px-6 py-3 bg-transparent border border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-background-primary font-semibold rounded-lg transition-all duration-300"
                 >
                   Submit Another Quote

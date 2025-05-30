@@ -12,13 +12,13 @@ const corsOptions = {
 
 // Get configuration values from environment variables
 // These will be set by Firebase Functions config
-const gmailEmail = process.env.GMAIL_EMAIL || 'contact@elev8texas.com';
+const gmailEmail = process.env.GMAIL_EMAIL || 'tech@elev8texas.com';
 const gmailPassword = process.env.GMAIL_PASSWORD;
 const googleCalendarId = process.env.GOOGLE_CALENDAR_ID;
 const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
 const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
 
-const businessEmail = 'contact@elev8texas.com';
+const businessEmail = 'tech@elev8texas.com';
 
 // Create reusable transporter object using Gmail
 const getTransporter = () => {
@@ -209,30 +209,41 @@ export const sendContactNotification = onFirestoreDocumentCreated(
       const customerMailOptions = {
         from: gmailEmail,
         to: contactData.email,
-        subject: 'Thank you for contacting Elev8 Solutions',
+        subject: 'We received your message - Elev8 Solutions',
         html: `
-          <h2>Thank you for contacting Elev8 Solutions!</h2>
+          <h2>Thank you for reaching out to Elev8 Solutions!</h2>
           <p>Hi ${contactData.name},</p>
-          <p>We've received your message and will get back to you within 24 hours with a personalized quote.</p>
+          <p>We've received your message and one of our team members will get back to you within 2 hours during business hours.</p>
           
-          <h3>Your Request Details:</h3>
-          <p><strong>Service:</strong> ${contactData.service}</p>
-          <p><strong>Message:</strong> ${contactData.message}</p>
+          <h3>Your Message Details:</h3>
+          <p><strong>Service Interest:</strong> ${contactData.service}</p>
+          ${contactData.urgency ? `<p><strong>Urgency:</strong> ${contactData.urgency}</p>` : ''}
+          <p><strong>Your Message:</strong></p>
+          <p style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; font-style: italic;">${contactData.message}</p>
           
-          <h3>What's Next?</h3>
+          <h3>What Happens Next?</h3>
           <ul>
-            <li>We'll review your request and prepare a customized quote</li>
-            <li>One of our team members will contact you within 24 hours</li>
-            <li>We'll schedule a convenient time for your service</li>
+            <li>A team member will review your specific request</li>
+            <li>We'll contact you within 2 hours during business hours (7 AM - 6 PM, Mon-Fri)</li>
+            <li>We'll provide immediate assistance or schedule a consultation</li>
+            ${contactData.urgency === 'emergency' ? '<li><strong>Emergency requests are handled immediately</strong></li>' : ''}
           </ul>
+          
+          <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #c9a96e;">
+            <h4 style="color: #c9a96e; margin-top: 0;">💬 Your Contact Request</h4>
+            <p><strong>Request ID:</strong> ${contactId}</p>
+            <p><strong>Submitted:</strong> ${contactData.timestamp.toDate().toLocaleDateString()}</p>
+            <p><em>Reference this ID if you need to follow up</em></p>
+          </div>
           
           <p><strong>Need immediate assistance?</strong> Call us at <a href="tel:+15127018085">(512) 701-8085</a></p>
           
           <p>Best regards,<br>The Elev8 Solutions Team</p>
           
           <hr>
-          <p><em>Elev8 Solutions - Professional Cleaning Services</em><br>
-          <em>Austin, Texas & Surrounding Areas</em></p>
+          <p><em>Elev8 Solutions - Professional Exterior Cleaning Services</em><br>
+          <em>Austin, Texas & Surrounding Areas</em><br>
+          <em>Quick Response Team Available</em></p>
         `,
       };
 
@@ -293,8 +304,62 @@ export const sendQuoteNotification = onFirestoreDocumentCreated(
         `,
       };
 
-      await transporter.sendMail(businessMailOptions);
-      console.log(`Quote notification sent for ${quoteId}`);
+      // Email confirmation to customer for quote request
+      const customerMailOptions = {
+        from: gmailEmail,
+        to: quoteData.email,
+        subject: 'Your Quote Request Has Been Received - Elev8 Solutions',
+        html: `
+          <h2>Thank you for your quote request!</h2>
+          <p>Hi ${quoteData.name},</p>
+          <p>We've received your detailed quote request and our team is preparing a customized estimate for your property.</p>
+          
+          <h3>Your Quote Request Summary:</h3>
+          <p><strong>Property Address:</strong> ${quoteData.address}</p>
+          <p><strong>Property Type:</strong> ${quoteData.propertyType}</p>
+          <p><strong>Services Requested:</strong> ${quoteData.services.join(', ')}</p>
+          ${quoteData.squareFootage ? `<p><strong>Square Footage:</strong> ${quoteData.squareFootage}</p>` : ''}
+          ${quoteData.windowCount ? `<p><strong>Number of Windows:</strong> ${quoteData.windowCount}</p>` : ''}
+          
+          <h3>What Happens Next?</h3>
+          <ul>
+            <li>Our team will review your property details and service requirements</li>
+            <li>We'll prepare a detailed, itemized quote tailored to your specific needs</li>
+            <li>You'll receive your personalized quote within 24 hours</li>
+            <li>We'll contact you to schedule a convenient service time</li>
+          </ul>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #c9a96e; margin-top: 0;">📋 Quote Request Details</h4>
+            <p><strong>Quote ID:</strong> ${quoteId}</p>
+            <p><strong>Submitted:</strong> ${quoteData.timestamp.toDate().toLocaleDateString()}</p>
+            <p><em>Save this information for your records</em></p>
+          </div>
+          
+          <p><strong>Questions or need to make changes?</strong> Reply to this email or call us at <a href="tel:+15127018085">(512) 701-8085</a></p>
+          
+          <p>Best regards,<br>The Elev8 Solutions Team</p>
+          
+          <hr>
+          <p><em>Elev8 Solutions - Professional Exterior Cleaning Services</em><br>
+          <em>Austin, Texas & Surrounding Areas</em><br>
+          <em>Licensed, Insured & Locally Owned</em></p>
+        `,
+      };
+
+      // Send both emails
+      await Promise.all([
+        transporter.sendMail(businessMailOptions),
+        transporter.sendMail(customerMailOptions)
+      ]);
+
+      console.log(`Quote notification emails sent for ${quoteId}`);
+
+      // Update the quote document to mark emails as sent
+      await event.data?.ref.update({
+        emailsSent: true,
+        emailsSentAt: admin.firestore.FieldValue.serverTimestamp()
+      });
 
     } catch (error) {
       console.error('Error sending quote notification:', error);

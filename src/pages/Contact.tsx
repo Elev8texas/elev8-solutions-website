@@ -4,7 +4,7 @@ import Footer from '../components/Footer';
 import StickyHelpButton from '../components/StickyHelpButton';
 import { Link, useLocation } from 'react-router-dom';
 import { saveContactForm, ContactFormData } from '../services/firebase';
-import { checkFirebaseConfig } from '../utils/firebaseCheck';
+import { scrollToTop } from '../components/ScrollToTop';
 
 const Contact: React.FC = () => {
   const location = useLocation();
@@ -58,6 +58,9 @@ const Contact: React.FC = () => {
       const docId = await saveContactForm(contactData);
       console.log('Contact form submitted successfully with ID:', docId);
       
+      // Scroll to top BEFORE showing success state
+      scrollToTop('auto');
+      
       // Show success state
       setIsSubmitted(true);
       
@@ -77,6 +80,13 @@ const Contact: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Ensure scroll to top when success page is shown
+  useEffect(() => {
+    if (isSubmitted) {
+      scrollToTop('auto');
+    }
+  }, [isSubmitted]);
 
   // Success message component
   if (isSubmitted) {
@@ -105,7 +115,10 @@ const Contact: React.FC = () => {
                   Return Home
                 </Link>
                 <button 
-                  onClick={() => setIsSubmitted(false)}
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    scrollToTop('smooth');
+                  }}
                   className="inline-flex items-center px-6 py-3 bg-transparent border border-gold-500 text-gold-500 hover:bg-gold-500 hover:text-background-primary font-semibold rounded-lg transition-all duration-300"
                 >
                   Submit Another Request
