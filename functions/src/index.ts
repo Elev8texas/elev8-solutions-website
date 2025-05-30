@@ -406,10 +406,15 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
     const auth = getCalendarAuth();
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const startOfDay = new Date(date);
+    // Parse the date correctly in Central Time (Texas timezone)
+    // Input should be in format "YYYY-MM-DD"
+    const selectedDate = new Date(date + 'T00:00:00.000-06:00'); // Force Central Time
+    console.log('Parsed selectedDate:', selectedDate);
+    
+    const startOfDay = new Date(selectedDate);
     startOfDay.setHours(7, 0, 0, 0); // 7 AM start
 
-    const endOfDay = new Date(date);
+    const endOfDay = new Date(selectedDate);
     endOfDay.setHours(18, 0, 0, 0); // 6 PM end
 
     // Adjust for Saturday hours (8 AM - 4 PM)
@@ -420,9 +425,16 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
 
     // No regular hours on Sunday
     if (startOfDay.getDay() === 0) {
+      console.log('Sunday detected - no business hours');
       res.status(200).json({ timeSlots: [] }); 
       return;
     }
+
+    console.log('Business hours:', {
+      start: startOfDay.toISOString(),
+      end: endOfDay.toISOString(),
+      dayOfWeek: startOfDay.getDay()
+    });
 
     // Get existing events
     const response = await calendar.events.list({
@@ -434,6 +446,7 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
     });
 
     const events = response.data.items || [];
+    console.log('Found', events.length, 'existing events');
     
     // Generate time slots (2-hour intervals to match frontend)
     const timeSlots = [];
@@ -456,17 +469,21 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
           return slotStart < eventEnd && slotEnd > eventStart;
         });
         
-        timeSlots.push({
+        const slot = {
           start: slotStart.toISOString(),
           end: slotEnd.toISOString(),
           available: isAvailable
-        });
+        };
+        
+        timeSlots.push(slot);
+        console.log('Generated slot:', slot);
       }
       
       current.setHours(current.getHours() + 2); // Increment by 2 hours
     }
 
-    console.log('Returning', timeSlots.length, 'time slots');
+    console.log('Generated', timeSlots.length, 'total time slots');
+    console.log('Sample slot structure:', timeSlots[0]);
     res.status(200).json({ timeSlots });
     
   } catch (error) {

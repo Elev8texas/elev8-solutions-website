@@ -69,18 +69,53 @@ export const isWithinBusinessHours = (dateTime: Date): boolean => {
 
 // Format time slot for display
 export const formatTimeSlot = (timeSlot: TimeSlot): string => {
+  console.log('🔍 formatTimeSlot called with:', timeSlot);
+  
+  // Add validation to check if the timeSlot has the expected properties
+  if (!timeSlot || typeof timeSlot !== 'object') {
+    console.error('❌ Invalid timeSlot object:', timeSlot);
+    return 'Invalid Time Slot';
+  }
+  
+  if (!timeSlot.start || !timeSlot.end) {
+    console.error('❌ Missing start or end property:', timeSlot);
+    return 'Invalid Time Slot';
+  }
+  
   const start = new Date(timeSlot.start);
   const end = new Date(timeSlot.end);
   
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+  console.log('📅 Parsed dates - start:', start, 'end:', end);
+  console.log('📅 Start ISO:', timeSlot.start, 'End ISO:', timeSlot.end);
+  
+  // Check if dates are valid
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    console.error('❌ Invalid date parsing:', {
+      startString: timeSlot.start,
+      endString: timeSlot.end,
+      startDate: start,
+      endDate: end
     });
+    return 'Invalid Date Range';
+  }
+  
+  const formatTime = (date: Date) => {
+    try {
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Chicago' // Force Central Time
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Invalid Time';
+    }
   };
   
-  return `${formatTime(start)} - ${formatTime(end)}`;
+  const result = `${formatTime(start)} - ${formatTime(end)}`;
+  console.log('✅ Formatted time slot:', result);
+  return result;
 };
 
 // Generate available time slots for a given date (2-hour blocks)
@@ -134,19 +169,30 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
 
     const result = await response.json();
     console.log('✅ Firebase Functions response:', result);
+    console.log('📊 Response type:', typeof result);
+    console.log('📊 Has timeSlots property:', 'timeSlots' in result);
     
     // Handle both wrapped object format { timeSlots: [...] } and direct array format
     if (result && typeof result === 'object' && 'timeSlots' in result && Array.isArray(result.timeSlots)) {
       console.log('📋 Using timeSlots from Firebase Functions response');
+      console.log('📋 Number of slots received:', result.timeSlots.length);
+      if (result.timeSlots.length > 0) {
+        console.log('📋 Sample slot structure:', result.timeSlots[0]);
+      }
       return result.timeSlots as TimeSlot[];
     }
     
     if (result && Array.isArray(result)) {
       console.log('📋 Using direct array from Firebase Functions response');
+      console.log('📋 Number of slots received:', result.length);
+      if (result.length > 0) {
+        console.log('📋 Sample slot structure:', result[0]);
+      }
       return result as TimeSlot[];
     }
     
     // If we get here, the response format is unexpected
+    console.error('❌ Unexpected response format:', result);
     throw new Error('Unexpected response format from Firebase Functions');
   } catch (error) {
     console.error('❌ Error fetching time slots:', error);
