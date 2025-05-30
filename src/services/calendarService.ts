@@ -167,10 +167,16 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log('✅ Firebase Functions response:', result);
+    // Get the raw text first to debug
+    const rawText = await response.text();
+    console.log('🔍 Raw response text:', rawText);
+    
+    // Parse the JSON
+    const result = JSON.parse(rawText);
+    console.log('✅ Parsed Firebase Functions response:', result);
     console.log('📊 Response type:', typeof result);
     console.log('📊 Has timeSlots property:', 'timeSlots' in result);
+    console.log('📊 Keys in result:', Object.keys(result));
     
     // Handle both wrapped object format { timeSlots: [...] } and direct array format
     if (result && typeof result === 'object' && 'timeSlots' in result && Array.isArray(result.timeSlots)) {
@@ -178,6 +184,10 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
       console.log('📋 Number of slots received:', result.timeSlots.length);
       if (result.timeSlots.length > 0) {
         console.log('📋 Sample slot structure:', result.timeSlots[0]);
+        console.log('📋 Sample slot keys:', Object.keys(result.timeSlots[0]));
+        console.log('📋 Sample slot start:', result.timeSlots[0].start);
+        console.log('📋 Sample slot end:', result.timeSlots[0].end);
+        console.log('📋 Sample slot available:', result.timeSlots[0].available);
       }
       return result.timeSlots as TimeSlot[];
     }
@@ -187,6 +197,7 @@ export const getAvailableTimeSlots = async (date: string): Promise<TimeSlot[]> =
       console.log('📋 Number of slots received:', result.length);
       if (result.length > 0) {
         console.log('📋 Sample slot structure:', result[0]);
+        console.log('📋 Sample slot keys:', Object.keys(result[0]));
       }
       return result as TimeSlot[];
     }
