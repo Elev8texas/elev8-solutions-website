@@ -409,35 +409,39 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
     // Parse the date correctly in Central Time (Texas timezone)
     // Input should be in format "YYYY-MM-DD"
     const selectedDate = new Date(date + 'T00:00:00.000-06:00'); // Force Central Time
-    console.log('Parsed selectedDate:', selectedDate);
+    console.log('Parsed selectedDate:', selectedDate.toISOString());
     
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(7, 0, 0, 0); // 7 AM start
-
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(18, 0, 0, 0); // 6 PM end
-
-    // Adjust for Saturday hours (8 AM - 4 PM)
-    if (startOfDay.getDay() === 6) {
-      startOfDay.setHours(8, 0, 0, 0);
-      endOfDay.setHours(16, 0, 0, 0);
-    }
-
-    // No regular hours on Sunday
-    if (startOfDay.getDay() === 0) {
-      console.log('Sunday detected - no business hours');
-      res.status(200).json({ timeSlots: [] }); 
+    // Convert to Central Time for business hours calculation
+    const centralTime = new Date(selectedDate.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+    const year = centralTime.getFullYear();
+    const month = centralTime.getMonth();
+    const day = centralTime.getDate();
+    const dayOfWeek = centralTime.getDay();
+    
+    // Create business hours in Central Time
+    let startHour = 7; // 7 AM
+    let endHour = 18;   // 6 PM
+    
+    if (dayOfWeek === 0) { // Sunday - closed
+      res.status(200).json({ timeSlots: [] });
       return;
+    } else if (dayOfWeek === 6) { // Saturday
+      startHour = 8;  // 8 AM
+      endHour = 16;   // 4 PM
     }
-
+    
+    // Create start and end times in Central Time
+    const startOfDay = new Date(year, month, day, startHour, 0, 0, 0);
+    const endOfDay = new Date(year, month, day, endHour, 0, 0, 0);
+    
     console.log('Business hours:', {
       start: startOfDay.toISOString(),
       end: endOfDay.toISOString(),
-      dayOfWeek: startOfDay.getDay()
+      dayOfWeek: dayOfWeek
     });
 
-    // Get existing events
-    const response = await calendar.events.list({
+    // Get existing events for the day
+    const existingEvents = await calendar.events.list({
       calendarId: googleCalendarId,
       timeMin: startOfDay.toISOString(),
       timeMax: endOfDay.toISOString(),
@@ -445,38 +449,48 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
       orderBy: 'startTime',
     });
 
-    const events = response.data.items || [];
-    console.log('Found', events.length, 'existing events');
-    
-    // Generate time slots (2-hour intervals to match frontend)
-    const timeSlots = [];
+    console.log(`Found ${existingEvents.data.items?.length || 0} existing events`);
+
+    // Generate available time slots (2-hour blocks)
+    const timeSlots: any[] = [];
     const current = new Date(startOfDay);
     
     while (current < endOfDay) {
       const slotStart = new Date(current);
-      const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2-hour slots
+      const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2 hour slots
       
       // Don't create slots that extend beyond business hours
       if (slotEnd <= endOfDay) {
-        // Check if this time slot conflicts with any existing event
-        const isAvailable = !events.some(event => {
+        // Check if this slot conflicts with existing events
+        const isAvailable = !existingEvents.data.items?.some(event => {
           if (!event.start?.dateTime || !event.end?.dateTime) return false;
           
           const eventStart = new Date(event.start.dateTime);
           const eventEnd = new Date(event.end.dateTime);
           
           // Check for overlap
-          return slotStart < eventEnd && slotEnd > eventStart;
+          return (slotStart < eventEnd && slotEnd > eventStart);
+        });
+
+        // Convert to Central Time for display (keep as local time, not UTC)
+        const centralSlotStart = new Date(slotStart.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+        const centralSlotEnd = new Date(slotEnd.toLocaleString("en-US", {timeZone: "America/Chicago"}));
+        
+        // Format as ISO strings but represent Central Time
+        const startISO = slotStart.toISOString().replace('Z', '-05:00'); // Central Time offset
+        const endISO = slotEnd.toISOString().replace('Z', '-05:00');     // Central Time offset
+        
+        console.log('Generated slot:', {
+          start: startISO,
+          end: endISO,
+          available: isAvailable
         });
         
-        const slot = {
-          start: slotStart.toISOString(),
-          end: slotEnd.toISOString(),
+        timeSlots.push({
+          start: startISO,
+          end: endISO,
           available: isAvailable
-        };
-        
-        timeSlots.push(slot);
-        console.log('Generated slot:', slot);
+        });
       }
       
       current.setHours(current.getHours() + 2); // Increment by 2 hours
@@ -496,8 +510,14 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
 });
 
 // Create calendar event and appointment
-export const createCalendarEvent = onCall(corsOptions, async (request) => {
+export const createCalendarEvent = onRequest(async (req, res) => {
   try {
+    setCorsHeaders(res);
+    if (req.method === 'OPTIONS') {
+      res.status(204).send('');
+      return;
+    }
+
     const {
       customerName,
       customerEmail,
@@ -507,11 +527,18 @@ export const createCalendarEvent = onCall(corsOptions, async (request) => {
       endTime,
       address,
       notes
-    } = request.data;
+    } = req.body;
+
+    console.log('Request body is missing data.', req.body);
 
     // Validate required fields
     if (!customerName || !customerEmail || !services || !startTime || !endTime) {
-      throw new HttpsError('invalid-argument', 'Missing required fields');
+      res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['customerName', 'customerEmail', 'services', 'startTime', 'endTime'],
+        received: Object.keys(req.body)
+      });
+      return;
     }
 
     const auth = getCalendarAuth();
@@ -589,15 +616,18 @@ This appointment was automatically scheduled through the Elev8 Solutions website
     console.log(`Calendar event created: ${eventData.id}`);
     console.log(`Appointment saved: ${appointmentRef.id}`);
 
-    return {
+    res.status(200).json({
       success: true,
       eventId: eventData.id,
       appointmentId: appointmentRef.id
-    };
+    });
 
   } catch (error) {
     console.error('Error creating calendar event:', error);
-    throw new HttpsError('internal', 'Failed to create calendar event');
+    res.status(500).json({ 
+      error: 'Failed to create calendar event',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
