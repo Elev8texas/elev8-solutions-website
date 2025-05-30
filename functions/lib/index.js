@@ -38,32 +38,33 @@ const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const admin = __importStar(require("firebase-admin"));
 const nodemailer = __importStar(require("nodemailer"));
-const params_1 = require("firebase-functions/params");
 const googleapis_1 = require("googleapis");
+const setCorsHeaders = (res) => { res.set('Access-Control-Allow-Origin', '*'); res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization'); };
 // CORS configuration for callable functions
 const corsOptions = {
     cors: true, // Allow all origins
 };
-// Define configuration parameters
-const gmailEmail = (0, params_1.defineString)('GMAIL_EMAIL');
-const gmailPassword = (0, params_1.defineString)('GMAIL_PASSWORD');
-const googleCalendarId = (0, params_1.defineString)('GOOGLE_CALENDAR_ID');
-const googleClientEmail = (0, params_1.defineString)('GOOGLE_CLIENT_EMAIL');
-const googlePrivateKey = (0, params_1.defineString)('GOOGLE_PRIVATE_KEY');
+// Get configuration values from environment variables
+// These will be set by Firebase Functions config
+const gmailEmail = process.env.GMAIL_EMAIL || 'contact@elev8texas.com';
+const gmailPassword = process.env.GMAIL_PASSWORD;
+const googleCalendarId = process.env.GOOGLE_CALENDAR_ID;
+const googleClientEmail = process.env.GOOGLE_CLIENT_EMAIL;
+const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
 const businessEmail = 'contact@elev8texas.com';
 // Create reusable transporter object using Gmail
 const getTransporter = () => {
     return nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: gmailEmail.value(),
-            pass: gmailPassword.value(),
+            user: gmailEmail,
+            pass: gmailPassword,
         },
     });
 };
 // Get Google Calendar authentication
 const getCalendarAuth = () => {
-    const auth = new googleapis_1.google.auth.JWT(googleClientEmail.value(), undefined, googlePrivateKey.value().replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/calendar']);
+    const auth = new googleapis_1.google.auth.JWT(googleClientEmail, undefined, googlePrivateKey === null || googlePrivateKey === void 0 ? void 0 : googlePrivateKey.replace(/\\n/g, '\n'), ['https://www.googleapis.com/auth/calendar']);
     return auth;
 };
 // Initialize Firebase Admin (uses default service account in Firebase Functions environment)
@@ -78,7 +79,7 @@ exports.sendEmailNotification = (0, firestore_1.onDocumentCreated)('emails/{docI
         return;
     const transporter = getTransporter();
     const mailOptions = {
-        from: gmailEmail.value(),
+        from: gmailEmail,
         to: businessEmail,
         subject: 'New Email Subscription - Elev8 Solutions',
         html: `
@@ -107,7 +108,7 @@ exports.sendAppointmentNotification = (0, firestore_1.onDocumentCreated)('appoin
         const transporter = getTransporter();
         // Email to business
         const businessMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Appointment Scheduled - ${Array.isArray(appointmentData.services) ? appointmentData.services.join(', ') : appointmentData.services || appointmentData.service}`,
             html: `
@@ -145,7 +146,7 @@ exports.sendClientProfileNotification = (0, firestore_1.onDocumentCreated)('clie
         const transporter = getTransporter();
         // Email to business
         const businessMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Client Profile - ${profileData.name}`,
             html: `
@@ -187,7 +188,7 @@ exports.sendContactNotification = (0, firestore_1.onDocumentCreated)('contacts/{
         const transporter = getTransporter();
         // Email to business
         const businessMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Contact Form Submission - ${contactData.name}`,
             html: `
@@ -209,7 +210,7 @@ exports.sendContactNotification = (0, firestore_1.onDocumentCreated)('contacts/{
         };
         // Email confirmation to customer
         const customerMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: contactData.email,
             subject: 'Thank you for contacting Elev8 Solutions',
             html: `
@@ -264,7 +265,7 @@ exports.sendQuoteNotification = (0, firestore_1.onDocumentCreated)('quotes/{quot
         const transporter = getTransporter();
         // Email to business
         const businessMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Quote Request - ${quoteData.name}`,
             html: `
@@ -303,7 +304,7 @@ exports.sendBundleNotification = (0, firestore_1.onDocumentCreated)('bundle-sele
     try {
         const transporter = getTransporter();
         const mailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Bundle Selection - ${bundleData.bundleName}`,
             html: `
@@ -338,7 +339,7 @@ exports.onCommercialInquiryCreated = (0, firestore_1.onDocumentCreated)('commerc
         const transporter = getTransporter();
         // Email to business
         const businessMailOptions = {
-            from: gmailEmail.value(),
+            from: gmailEmail,
             to: businessEmail,
             subject: `New Commercial Inquiry - ${data.businessName}`,
             html: `
@@ -364,12 +365,19 @@ exports.onCommercialInquiryCreated = (0, firestore_1.onDocumentCreated)('commerc
 });
 // Calendar Functions for appointment booking
 // Get available time slots
-exports.getAvailableTimeSlots = (0, https_1.onCall)(corsOptions, async (request) => {
+exports.getAvailableTimeSlots = (0, https_1.onRequest)(async (req, res) => {
     try {
-        const { date } = request.data;
-        if (!date) {
-            throw new https_1.HttpsError('invalid-argument', 'Date is required');
+        setCorsHeaders(res);
+        if (req.method === 'OPTIONS') {
+            res.status(204).send('');
+            return;
         }
+        const { date } = req.body;
+        if (!date) {
+            res.status(400).json({ error: 'Date is required' });
+            return;
+        }
+        console.log('Received request for date:', date);
         const auth = getCalendarAuth();
         const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
         const startOfDay = new Date(date);
@@ -383,47 +391,49 @@ exports.getAvailableTimeSlots = (0, https_1.onCall)(corsOptions, async (request)
         }
         // No regular hours on Sunday
         if (startOfDay.getDay() === 0) {
-            return { timeSlots: [] };
+            res.status(200).json({ timeSlots: [] });
+            return;
         }
         // Get existing events
         const response = await calendar.events.list({
-            calendarId: googleCalendarId.value(),
+            calendarId: googleCalendarId,
             timeMin: startOfDay.toISOString(),
             timeMax: endOfDay.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
         });
-        const existingEvents = response.data.items || [];
-        // Generate time slots (2-hour intervals to match frontend)
+        const events = response.data.items || [];
+        // Generate time slots (every hour)
         const timeSlots = [];
         const current = new Date(startOfDay);
         while (current < endOfDay) {
-            const slotStart = new Date(current);
-            const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2 hour slots
-            // Don't create slots that extend beyond business hours
-            if (slotEnd <= endOfDay) {
-                // Check if this slot conflicts with existing events
-                const isAvailable = !existingEvents.some((event) => {
-                    var _a, _b;
-                    if (!((_a = event.start) === null || _a === void 0 ? void 0 : _a.dateTime) || !((_b = event.end) === null || _b === void 0 ? void 0 : _b.dateTime))
-                        return false;
-                    const eventStart = new Date(event.start.dateTime);
-                    const eventEnd = new Date(event.end.dateTime);
-                    return (slotStart < eventEnd && slotEnd > eventStart);
-                });
-                timeSlots.push({
-                    start: slotStart.toISOString(),
-                    end: slotEnd.toISOString(),
-                    available: isAvailable
-                });
-            }
-            current.setHours(current.getHours() + 2); // Increment by 2 hours
+            const timeString = current.toTimeString().slice(0, 5); // HH:MM format
+            // Check if this time slot conflicts with any existing event
+            const isAvailable = !events.some(event => {
+                var _a, _b;
+                if (!((_a = event.start) === null || _a === void 0 ? void 0 : _a.dateTime) || !((_b = event.end) === null || _b === void 0 ? void 0 : _b.dateTime))
+                    return false;
+                const eventStart = new Date(event.start.dateTime);
+                const eventEnd = new Date(event.end.dateTime);
+                const slotEnd = new Date(current.getTime() + 60 * 60 * 1000); // 1 hour later
+                // Check for overlap
+                return current < eventEnd && slotEnd > eventStart;
+            });
+            timeSlots.push({
+                time: timeString,
+                available: isAvailable
+            });
+            current.setHours(current.getHours() + 1);
         }
-        return { timeSlots }; // Return wrapped in object to match frontend expectations
+        console.log('Returning', timeSlots.length, 'time slots');
+        res.status(200).json({ timeSlots });
     }
     catch (error) {
         console.error('Error fetching available time slots:', error);
-        throw new https_1.HttpsError('internal', 'Failed to fetch available time slots');
+        res.status(500).json({
+            error: 'Failed to fetch available time slots',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 });
 // Create calendar event and appointment
@@ -463,7 +473,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
                     displayName: customerName,
                 },
                 {
-                    email: businessEmail,
+                    email: gmailEmail,
                     displayName: 'Elev8 Solutions',
                 }
             ],
@@ -477,7 +487,7 @@ This appointment was automatically scheduled through the Elev8 Solutions website
             location: address || '',
         };
         const response = await calendar.events.insert({
-            calendarId: googleCalendarId.value(),
+            calendarId: googleCalendarId,
             requestBody: event,
             sendUpdates: 'all', // Send invitations to all attendees
         });
@@ -533,7 +543,7 @@ exports.updateAppointmentStatus = (0, https_1.onCall)(corsOptions, async (reques
                 const auth = getCalendarAuth();
                 const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
                 await calendar.events.delete({
-                    calendarId: googleCalendarId.value(),
+                    calendarId: googleCalendarId,
                     eventId: calendarEventId,
                     sendUpdates: 'all', // Notify attendees
                 });

@@ -1,11 +1,6 @@
 // Calendar service for appointment booking
 // Uses Google Calendar API with Firebase Functions for real-time integration
 
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app } from './firebase';
-
-const functions = getFunctions(app);
-
 // Firebase Functions configuration
 const FUNCTION_BASE_URL = 'https://us-central1-elev8-website-a155a.cloudfunctions.net';
 
@@ -220,7 +215,7 @@ export const isValidBookingDate = (date: Date): boolean => {
   return date >= today && date <= maxDate;
 };
 
-export default {
+const calendarService = {
   getAvailableTimeSlots,
   createAppointment,
   formatTimeSlot,
@@ -229,4 +224,6 @@ export default {
   isWithinBusinessHours,
   isValidBookingDate,
   generateTimeSlots
-}; 
+};
+
+export default calendarService; 

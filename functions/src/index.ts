@@ -435,31 +435,35 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
 
     const events = response.data.items || [];
     
-    // Generate time slots (every hour)
+    // Generate time slots (2-hour intervals to match frontend)
     const timeSlots = [];
     const current = new Date(startOfDay);
     
     while (current < endOfDay) {
-      const timeString = current.toTimeString().slice(0, 5); // HH:MM format
+      const slotStart = new Date(current);
+      const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2-hour slots
       
-      // Check if this time slot conflicts with any existing event
-      const isAvailable = !events.some(event => {
-        if (!event.start?.dateTime || !event.end?.dateTime) return false;
+      // Don't create slots that extend beyond business hours
+      if (slotEnd <= endOfDay) {
+        // Check if this time slot conflicts with any existing event
+        const isAvailable = !events.some(event => {
+          if (!event.start?.dateTime || !event.end?.dateTime) return false;
+          
+          const eventStart = new Date(event.start.dateTime);
+          const eventEnd = new Date(event.end.dateTime);
+          
+          // Check for overlap
+          return slotStart < eventEnd && slotEnd > eventStart;
+        });
         
-        const eventStart = new Date(event.start.dateTime);
-        const eventEnd = new Date(event.end.dateTime);
-        const slotEnd = new Date(current.getTime() + 60 * 60 * 1000); // 1 hour later
-        
-        // Check for overlap
-        return current < eventEnd && slotEnd > eventStart;
-      });
+        timeSlots.push({
+          start: slotStart.toISOString(),
+          end: slotEnd.toISOString(),
+          available: isAvailable
+        });
+      }
       
-      timeSlots.push({
-        time: timeString,
-        available: isAvailable
-      });
-      
-      current.setHours(current.getHours() + 1);
+      current.setHours(current.getHours() + 2); // Increment by 2 hours
     }
 
     console.log('Returning', timeSlots.length, 'time slots');

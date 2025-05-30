@@ -45,7 +45,6 @@ const CalendarBooking: React.FC<CalendarBookingProps> = ({
     const month = currentMonth.getMonth();
     
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
     
@@ -72,28 +71,13 @@ const CalendarBooking: React.FC<CalendarBookingProps> = ({
   const handleTimeSelect = (slot: TimeSlot) => {
     if (!slot.available || !selectedDate) return;
     
-    // Handle current backend format: { time: "07:00", available: true }
-    if ((slot as any).time) {
-      // Convert time to full datetime format for consistency
-      const selectedDateTime = new Date(selectedDate + 'T' + (slot as any).time + ':00');
-      onDateTimeSelect(selectedDate, selectedDateTime.toISOString());
-    } 
-    // Handle expected format: { start: "ISO_DATE", end: "ISO_DATE", available: true }
-    else if (slot.start) {
-      onDateTimeSelect(selectedDate, slot.start);
-    }
+    // Backend now consistently returns the correct format: { start: "ISO_DATE", end: "ISO_DATE", available: true }
+    onDateTimeSelect(selectedDate, slot.start);
   };
 
   // Helper function to get the time value for comparison
   const getSlotTimeValue = (slot: TimeSlot): string => {
-    if ((slot as any).time) {
-      // Convert time to full datetime format for consistency
-      const selectedDateTime = new Date(selectedDate + 'T' + (slot as any).time + ':00');
-      return selectedDateTime.toISOString();
-    } else if (slot.start) {
-      return slot.start;
-    }
-    return '';
+    return slot.start;
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
