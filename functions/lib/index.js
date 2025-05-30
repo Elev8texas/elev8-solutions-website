@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testCORS = exports.updateAppointmentStatus = exports.createCalendarEvent = exports.getAvailableTimeSlots = exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
+exports.testCORS = exports.updateAppointmentStatus = exports.createCalendarEventHttp = exports.getAvailableTimeSlots = exports.onCommercialInquiryCreated = exports.sendBundleNotification = exports.sendQuoteNotification = exports.sendContactNotification = exports.sendClientProfileNotification = exports.sendAppointmentNotification = exports.sendEmailNotification = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const admin = __importStar(require("firebase-admin"));
@@ -366,6 +366,7 @@ exports.onCommercialInquiryCreated = (0, firestore_1.onDocumentCreated)('commerc
 // Calendar Functions for appointment booking
 // Get available time slots
 exports.getAvailableTimeSlots = (0, https_1.onRequest)(async (req, res) => {
+    var _a, _b;
     try {
         setCorsHeaders(res);
         if (req.method === 'OPTIONS') {
@@ -380,52 +381,78 @@ exports.getAvailableTimeSlots = (0, https_1.onRequest)(async (req, res) => {
         console.log('Received request for date:', date);
         const auth = getCalendarAuth();
         const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
-        const startOfDay = new Date(date);
-        startOfDay.setHours(7, 0, 0, 0); // 7 AM start
-        const endOfDay = new Date(date);
-        endOfDay.setHours(18, 0, 0, 0); // 6 PM end
-        // Adjust for Saturday hours (8 AM - 4 PM)
-        if (startOfDay.getDay() === 6) {
-            startOfDay.setHours(8, 0, 0, 0);
-            endOfDay.setHours(16, 0, 0, 0);
-        }
-        // No regular hours on Sunday
-        if (startOfDay.getDay() === 0) {
+        // Parse the date correctly in Central Time (Texas timezone)
+        // Input should be in format "YYYY-MM-DD"
+        const selectedDate = new Date(date + 'T00:00:00.000-06:00'); // Force Central Time
+        console.log('Parsed selectedDate:', selectedDate.toISOString());
+        // Define business hours in Central Time
+        const dayOfWeek = selectedDate.getDay();
+        let startHour = 9; // 9 AM Central
+        let endHour = 17; // 5 PM Central
+        if (dayOfWeek === 0) { // Sunday - closed
             res.status(200).json({ timeSlots: [] });
             return;
         }
-        // Get existing events
-        const response = await calendar.events.list({
+        else if (dayOfWeek === 6) { // Saturday
+            startHour = 9; // 9 AM Central
+            endHour = 17; // 5 PM Central
+        }
+        // Create proper Central Time dates
+        // Central Time is UTC-6 (CST) or UTC-5 (CDT)
+        // For May 2025, we're in CDT (UTC-5)
+        const centralOffset = 5; // Hours to ADD to Central Time to get UTC
+        const [year, month, day] = date.split('-').map(Number);
+        // Create the times: Central Time + offset = UTC Time
+        // 9 AM Central + 5 hours = 14:00 UTC (2 PM UTC)
+        const startOfDay = new Date(year, month - 1, day, startHour + centralOffset, 0, 0, 0);
+        const endOfDay = new Date(year, month - 1, day, endHour + centralOffset, 0, 0, 0);
+        console.log('Business hours (Central Time converted to UTC):', {
+            start: startOfDay.toISOString(),
+            end: endOfDay.toISOString(),
+            dayOfWeek: dayOfWeek,
+            centralTimeStart: `${startHour}:00 Central`,
+            centralTimeEnd: `${endHour}:00 Central`
+        });
+        // Get existing events for the day
+        const existingEvents = await calendar.events.list({
             calendarId: googleCalendarId,
             timeMin: startOfDay.toISOString(),
             timeMax: endOfDay.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
         });
-        const events = response.data.items || [];
-        // Generate time slots (every hour)
+        console.log(`Found ${((_a = existingEvents.data.items) === null || _a === void 0 ? void 0 : _a.length) || 0} existing events`);
+        // Generate available time slots (2-hour blocks)
         const timeSlots = [];
         const current = new Date(startOfDay);
         while (current < endOfDay) {
-            const timeString = current.toTimeString().slice(0, 5); // HH:MM format
-            // Check if this time slot conflicts with any existing event
-            const isAvailable = !events.some(event => {
-                var _a, _b;
-                if (!((_a = event.start) === null || _a === void 0 ? void 0 : _a.dateTime) || !((_b = event.end) === null || _b === void 0 ? void 0 : _b.dateTime))
-                    return false;
-                const eventStart = new Date(event.start.dateTime);
-                const eventEnd = new Date(event.end.dateTime);
-                const slotEnd = new Date(current.getTime() + 60 * 60 * 1000); // 1 hour later
-                // Check for overlap
-                return current < eventEnd && slotEnd > eventStart;
-            });
-            timeSlots.push({
-                time: timeString,
-                available: isAvailable
-            });
-            current.setHours(current.getHours() + 1);
+            const slotStart = new Date(current);
+            const slotEnd = new Date(current.getTime() + 2 * 60 * 60 * 1000); // 2 hour slots
+            // Don't create slots that extend beyond business hours
+            if (slotEnd <= endOfDay) {
+                // Check if this slot conflicts with existing events
+                const isAvailable = !((_b = existingEvents.data.items) === null || _b === void 0 ? void 0 : _b.some(event => {
+                    var _a, _b;
+                    if (!((_a = event.start) === null || _a === void 0 ? void 0 : _a.dateTime) || !((_b = event.end) === null || _b === void 0 ? void 0 : _b.dateTime))
+                        return false;
+                    const eventStart = new Date(event.start.dateTime);
+                    const eventEnd = new Date(event.end.dateTime);
+                    // Check for overlap
+                    return (slotStart < eventEnd && slotEnd > eventStart);
+                }));
+                // Return the times as ISO strings (the frontend will handle timezone display)
+                const slot = {
+                    start: slotStart.toISOString(),
+                    end: slotEnd.toISOString(),
+                    available: isAvailable
+                };
+                console.log('Generated slot:', slot);
+                timeSlots.push(slot);
+            }
+            current.setHours(current.getHours() + 2); // Increment by 2 hours
         }
-        console.log('Returning', timeSlots.length, 'time slots');
+        console.log('Generated', timeSlots.length, 'total time slots');
+        console.log('Sample slot structure:', timeSlots[0]);
         res.status(200).json({ timeSlots });
     }
     catch (error) {
@@ -436,14 +463,56 @@ exports.getAvailableTimeSlots = (0, https_1.onRequest)(async (req, res) => {
         });
     }
 });
-// Create calendar event and appointment
-exports.createCalendarEvent = (0, https_1.onCall)(corsOptions, async (request) => {
+// Create calendar event and appointment (HTTP version)
+exports.createCalendarEventHttp = (0, https_1.onRequest)(async (req, res) => {
+    var _a;
     try {
-        const { customerName, customerEmail, customerPhone, services, startTime, endTime, address, notes } = request.data;
+        console.log('📅 Calendar event creation started');
+        console.log('📋 Request method:', req.method);
+        console.log('📋 Request headers:', JSON.stringify(req.headers, null, 2));
+        setCorsHeaders(res);
+        if (req.method === 'OPTIONS') {
+            console.log('✅ CORS preflight request handled');
+            res.status(204).send('');
+            return;
+        }
+        console.log('📦 Request body received:', JSON.stringify(req.body, null, 2));
+        const { customerName, customerEmail, customerPhone, services, startTime, endTime, address, notes } = req.body;
         // Validate required fields
         if (!customerName || !customerEmail || !services || !startTime || !endTime) {
-            throw new https_1.HttpsError('invalid-argument', 'Missing required fields');
+            console.log('❌ Validation failed - missing required fields');
+            console.log('❌ Missing fields:', {
+                customerName: !customerName,
+                customerEmail: !customerEmail,
+                services: !services,
+                startTime: !startTime,
+                endTime: !endTime
+            });
+            res.status(400).json({
+                error: 'Missing required fields',
+                required: ['customerName', 'customerEmail', 'services', 'startTime', 'endTime'],
+                received: Object.keys(req.body || {}),
+                details: 'One or more required fields are missing from the request'
+            });
+            return;
         }
+        console.log('✅ Validation passed - all required fields present');
+        console.log('🔧 Creating calendar event...');
+        // Validate environment variables
+        if (!googleCalendarId || !googleClientEmail || !googlePrivateKey) {
+            console.error('❌ Missing Google Calendar environment variables:', {
+                googleCalendarId: !!googleCalendarId,
+                googleClientEmail: !!googleClientEmail,
+                googlePrivateKey: !!googlePrivateKey
+            });
+            res.status(500).json({
+                error: 'Server configuration error',
+                details: 'Google Calendar integration not properly configured',
+                type: 'configuration_error'
+            });
+            return;
+        }
+        console.log('✅ Environment variables validated');
         const auth = getCalendarAuth();
         const calendar = googleapis_1.google.calendar({ version: 'v3', auth });
         const serviceList = Array.isArray(services) ? services.join(', ') : services;
@@ -511,15 +580,33 @@ This appointment was automatically scheduled through the Elev8 Solutions website
             .add(appointmentData);
         console.log(`Calendar event created: ${eventData.id}`);
         console.log(`Appointment saved: ${appointmentRef.id}`);
-        return {
+        res.status(200).json({
             success: true,
             eventId: eventData.id,
             appointmentId: appointmentRef.id
-        };
+        });
     }
     catch (error) {
-        console.error('Error creating calendar event:', error);
-        throw new https_1.HttpsError('internal', 'Failed to create calendar event');
+        console.error('❌ Error creating calendar event:', error);
+        console.error('❌ Error details:', {
+            name: error === null || error === void 0 ? void 0 : error.name,
+            message: error === null || error === void 0 ? void 0 : error.message,
+            code: error === null || error === void 0 ? void 0 : error.code,
+            stack: error === null || error === void 0 ? void 0 : error.stack
+        });
+        // Check if it's a Google Calendar API error
+        if ((_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.status) {
+            console.error('❌ Google Calendar API error:', {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data
+            });
+        }
+        res.status(500).json({
+            error: 'Failed to create calendar event',
+            details: error instanceof Error ? error.message : 'Unknown error',
+            type: 'calendar_creation_error'
+        });
     }
 });
 // Update appointment status

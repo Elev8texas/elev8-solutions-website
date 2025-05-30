@@ -216,7 +216,7 @@ export const createAppointment = async (appointmentData: AppointmentData): Promi
   console.log('📝 Creating appointment:', appointmentData);
   
   try {
-    const response = await fetch(`${FUNCTION_BASE_URL}/createCalendarEvent`, {
+    const response = await fetch(`${FUNCTION_BASE_URL}/createCalendarEventHttp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -504,14 +504,21 @@ export const getAvailableTimeSlots = onRequest(async (req, res) => {
   }
 });
 
-// Create calendar event and appointment
-export const createCalendarEvent = onRequest(async (req, res) => {
+// Create calendar event and appointment (HTTP version)
+export const createCalendarEventHttp = onRequest(async (req, res) => {
   try {
+    console.log('📅 Calendar event creation started');
+    console.log('📋 Request method:', req.method);
+    console.log('📋 Request headers:', JSON.stringify(req.headers, null, 2));
+    
     setCorsHeaders(res);
     if (req.method === 'OPTIONS') {
+      console.log('✅ CORS preflight request handled');
       res.status(204).send('');
       return;
     }
+
+    console.log('📦 Request body received:', JSON.stringify(req.body, null, 2));
 
     const {
       customerName,
@@ -524,17 +531,44 @@ export const createCalendarEvent = onRequest(async (req, res) => {
       notes
     } = req.body;
 
-    console.log('Request body is missing data.', req.body);
-
     // Validate required fields
     if (!customerName || !customerEmail || !services || !startTime || !endTime) {
+      console.log('❌ Validation failed - missing required fields');
+      console.log('❌ Missing fields:', {
+        customerName: !customerName,
+        customerEmail: !customerEmail,
+        services: !services,
+        startTime: !startTime,
+        endTime: !endTime
+      });
       res.status(400).json({ 
         error: 'Missing required fields',
         required: ['customerName', 'customerEmail', 'services', 'startTime', 'endTime'],
-        received: Object.keys(req.body)
+        received: Object.keys(req.body || {}),
+        details: 'One or more required fields are missing from the request'
       });
       return;
     }
+
+    console.log('✅ Validation passed - all required fields present');
+    console.log('🔧 Creating calendar event...');
+
+    // Validate environment variables
+    if (!googleCalendarId || !googleClientEmail || !googlePrivateKey) {
+      console.error('❌ Missing Google Calendar environment variables:', {
+        googleCalendarId: !!googleCalendarId,
+        googleClientEmail: !!googleClientEmail,
+        googlePrivateKey: !!googlePrivateKey
+      });
+      res.status(500).json({
+        error: 'Server configuration error',
+        details: 'Google Calendar integration not properly configured',
+        type: 'configuration_error'
+      });
+      return;
+    }
+
+    console.log('✅ Environment variables validated');
 
     const auth = getCalendarAuth();
     const calendar = google.calendar({ version: 'v3', auth });
@@ -618,10 +652,27 @@ This appointment was automatically scheduled through the Elev8 Solutions website
     });
 
   } catch (error) {
-    console.error('Error creating calendar event:', error);
+    console.error('❌ Error creating calendar event:', error);
+    console.error('❌ Error details:', {
+      name: (error as any)?.name,
+      message: (error as any)?.message,
+      code: (error as any)?.code,
+      stack: (error as any)?.stack
+    });
+    
+    // Check if it's a Google Calendar API error
+    if ((error as any)?.response?.status) {
+      console.error('❌ Google Calendar API error:', {
+        status: (error as any).response.status,
+        statusText: (error as any).response.statusText,
+        data: (error as any).response.data
+      });
+    }
+    
     res.status(500).json({ 
       error: 'Failed to create calendar event',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      type: 'calendar_creation_error'
     });
   }
 });
