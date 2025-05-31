@@ -5,6 +5,7 @@ import StickyHelpButton from '../components/StickyHelpButton';
 import { Link, useLocation } from 'react-router-dom';
 import { saveContactForm, ContactFormData } from '../services/firebase';
 import { scrollToTop } from '../components/ScrollToTop';
+import { analytics } from '../utils/analytics';
 
 const Contact: React.FC = () => {
   const location = useLocation();
@@ -57,6 +58,10 @@ const Contact: React.FC = () => {
       // Save to Firebase
       const docId = await saveContactForm(contactData);
       console.log('Contact form submitted successfully with ID:', docId);
+      
+      // Track form submission and conversion
+      analytics.trackFormSubmission('contact');
+      analytics.trackConversion('contact_form');
       
       // Scroll to top BEFORE showing success state
       scrollToTop('auto');

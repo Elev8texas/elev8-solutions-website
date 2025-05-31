@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { analytics } from '../utils/analytics';
 
 const StickyHelpButton: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const navigate = useNavigate();
 
   const handleClick = () => {
+    // Track help button usage
+    analytics.trackHelpButtonUsage();
+    analytics.trackNavigation('/help', 'sticky_help_button');
+    
     // Navigate to the help contact form page
     navigate('/help');
   };

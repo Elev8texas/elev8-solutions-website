@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { saveEmail } from '../services/firebase';
+import { analytics } from '../utils/analytics';
 
 interface NewsletterPopupProps {
   onClose: () => void;
@@ -12,6 +13,18 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Track popup view when it becomes visible
+  React.useEffect(() => {
+    if (isVisible) {
+      analytics.trackPopupInteraction('view', 'newsletter');
+    }
+  }, [isVisible]);
+
+  const handleClose = () => {
+    analytics.trackPopupInteraction('close', 'newsletter');
+    onClose();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
@@ -23,6 +36,11 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
       // Save email to Firebase Emails collection
       const docId = await saveEmail(email, 'newsletter-popup');
       console.log('Newsletter email saved with ID:', docId);
+      
+      // Track successful newsletter signup
+      analytics.trackFormSubmission('newsletter');
+      analytics.trackConversion('email_signup');
+      analytics.trackPopupInteraction('submit', 'newsletter');
       
       setIsSubmitted(true);
       
@@ -46,7 +64,7 @@ const NewsletterPopup: React.FC<NewsletterPopupProps> = ({ onClose, isVisible })
       <div className="bg-background-card border border-border-primary rounded-xl w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto relative animate-in fade-in slide-in-from-bottom-4 duration-300 max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 text-text-muted hover:text-text-primary transition-colors duration-200 z-10"
         >
           <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

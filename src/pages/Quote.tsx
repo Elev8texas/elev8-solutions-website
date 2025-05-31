@@ -7,6 +7,7 @@ import { saveQuoteRequest } from '../services/firebase';
 import CalendarBooking from '../components/CalendarBooking';
 import { createAppointment, AppointmentData } from '../services/calendarService';
 import { scrollToTop } from '../components/ScrollToTop';
+import { analytics } from '../utils/analytics';
 
 const Quote: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -277,8 +278,10 @@ const Quote: React.FC = () => {
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
+      // Track quote step progression
+      analytics.trackQuoteStep(currentStep + 1);
+      scrollToTop();
     }
-    scrollToTop();
   };
 
   const prevStep = () => {
@@ -315,6 +318,10 @@ const Quote: React.FC = () => {
       // Save quote request to Firebase
       const docId = await saveQuoteRequest(quoteData);
       console.log('Quote request submitted successfully with ID:', docId);
+
+      // Track form submission and conversion
+      analytics.trackFormSubmission('quote');
+      analytics.trackConversion('quote_request');
 
       // If appointment time is selected, create calendar event
       if (formData.preferredDate && formData.preferredTime) {
