@@ -1,3 +1,20 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /private/
+
+# Sitemap
+Sitemap: https://elev8texas.com/sitemap.xml
+
+# Allow search engines to crawl important pages
+Allow: /services
+Allow: /contact
+Allow: /quote
+Allow: /about
+Allow: /gallery
+Allow: /commercial
+
+# Block unnecessary files
+Disallow: /*.json$
+Disallow: /static/

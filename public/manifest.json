@@ -1,25 +1,35 @@
 {
-  "short_name": "Elev8",
-  "name": "Elev8 Solutions - Professional Cleaning Services",
+  "short_name": "Elev8 Solutions",
+  "name": "Elev8 Solutions - Pressure Washing & Window Cleaning Austin TX",
+  "description": "Professional pressure washing, window cleaning, solar panel cleaning, and roof cleaning services in Austin, Texas. Serving Westlake, Lakeway, Round Rock.",
+  "keywords": "pressure washing Austin, window cleaning, solar panel cleaning, roof cleaning, exterior cleaning",
+  "categories": ["business", "cleaning", "services"],
+  "lang": "en-US",
   "icons": [
     {
       "src": "logo.png",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo.png",
+      "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
-      "src": "logo.png",
+      "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#D4AF37",
-  "background_color": "#1a1a1a"
+  "background_color": "#1a1a1a",
+  "scope": "/",
+  "dir": "ltr"
 }
