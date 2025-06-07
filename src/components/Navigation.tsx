@@ -5,6 +5,7 @@ import logo from '../assets/logo.png';
 const Navigation: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +21,16 @@ const Navigation: React.FC = () => {
     navigate('/commercial');
     setIsMobileMenuOpen(false); // Close mobile menu if open
   };
+
+  const services = [
+    { name: 'Window Washing', path: '/services/window-washing' },
+    { name: 'Pressure Washing', path: '/services/pressure-washing' },
+    { name: 'Roof Cleaning', path: '/services/roof-cleaning' },
+    { name: 'Gutter Cleaning', path: '/services/gutter-cleaning' },
+    { name: 'Solar Panel Cleaning', path: '/services/solar-panel-cleaning' },
+    { name: 'Exterior Cleaning', path: '/services/exterior-cleaning' },
+    { name: 'Deck & Patio Cleaning', path: '/services/deck-patio-cleaning' }
+  ];
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -38,9 +49,49 @@ const Navigation: React.FC = () => {
             >
               Commercial
             </button>
-            <Link to="/services" className="nav-link text-off-white hover:text-gold transition-colors duration-300 text-sm font-medium">
-              Services
-            </Link>
+            
+            {/* Services Dropdown */}
+            <div className="relative">
+              <button
+                onMouseEnter={() => setIsServicesDropdownOpen(true)}
+                onMouseLeave={() => setIsServicesDropdownOpen(false)}
+                className="nav-link text-off-white hover:text-gold transition-colors duration-300 text-sm font-medium flex items-center space-x-1"
+              >
+                <span>Services</span>
+                <svg className={`w-4 h-4 transition-transform duration-200 ${isServicesDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Dropdown Menu */}
+              <div
+                onMouseEnter={() => setIsServicesDropdownOpen(true)}
+                onMouseLeave={() => setIsServicesDropdownOpen(false)}
+                className={`absolute top-full left-0 mt-2 w-64 bg-black/90 backdrop-blur-md border border-gray-600/30 rounded-lg shadow-xl transition-all duration-200 ${
+                  isServicesDropdownOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'
+                }`}
+              >
+                <div className="py-2">
+                  <Link
+                    to="/services"
+                    className="block px-4 py-3 text-off-white hover:text-gold hover:bg-gold-500/10 transition-colors duration-200 border-b border-gray-600/20"
+                  >
+                    <div className="font-medium">All Services</div>
+                    <div className="text-xs text-gray-400">Complete service overview</div>
+                  </Link>
+                  {services.map((service) => (
+                    <Link
+                      key={service.path}
+                      to={service.path}
+                      className="block px-4 py-2 text-sm text-off-white hover:text-gold hover:bg-gold-500/10 transition-colors duration-200"
+                    >
+                      {service.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
             <Link to="/about" className="nav-link text-off-white hover:text-gold transition-colors duration-300 text-sm font-medium">
               About
             </Link>
@@ -100,9 +151,26 @@ const Navigation: React.FC = () => {
                   Commercial
                 </button>
               </div>
-              <Link to="/services" className="block px-3 py-2 text-off-white hover:text-gold transition-colors duration-300" onClick={() => setIsMobileMenuOpen(false)}>
-                Services
-              </Link>
+              
+              {/* Mobile Services Menu */}
+              <div className="px-3 py-2">
+                <Link to="/services" className="block text-off-white hover:text-gold transition-colors duration-300 font-medium mb-2" onClick={() => setIsMobileMenuOpen(false)}>
+                  All Services
+                </Link>
+                <div className="ml-4 space-y-1">
+                  {services.map((service) => (
+                    <Link
+                      key={service.path}
+                      to={service.path}
+                      className="block text-sm text-gray-300 hover:text-gold transition-colors duration-300"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {service.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              
               <Link to="/about" className="block px-3 py-2 text-off-white hover:text-gold transition-colors duration-300" onClick={() => setIsMobileMenuOpen(false)}>
                 About
               </Link>

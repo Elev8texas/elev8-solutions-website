@@ -21,6 +21,15 @@ import StickyHelpButton from './components/StickyHelpButton';
 import NewsletterPopup from './components/NewsletterPopup';
 import ScrollToTop from './components/ScrollToTop';
 
+// Import individual service pages
+import WindowWashing from './pages/services/WindowWashing';
+import PressureWashing from './pages/services/PressureWashing';
+import RoofCleaning from './pages/services/RoofCleaning';
+import GutterCleaning from './pages/services/GutterCleaning';
+import SolarPanelCleaning from './pages/services/SolarPanelCleaning';
+import ExteriorCleaning from './pages/services/ExteriorCleaning';
+import DeckPatioCleaning from './pages/services/DeckPatioCleaning';
+
 function HomePage() {
   return (
     <>
@@ -80,6 +89,16 @@ function App() {
           } />
           <Route path="/commercial" element={<Commercial />} />
           <Route path="/services" element={<Services />} />
+          
+          {/* Individual Service Pages */}
+          <Route path="/services/window-washing" element={<WindowWashing />} />
+          <Route path="/services/pressure-washing" element={<PressureWashing />} />
+          <Route path="/services/roof-cleaning" element={<RoofCleaning />} />
+          <Route path="/services/gutter-cleaning" element={<GutterCleaning />} />
+          <Route path="/services/solar-panel-cleaning" element={<SolarPanelCleaning />} />
+          <Route path="/services/exterior-cleaning" element={<ExteriorCleaning />} />
+          <Route path="/services/deck-patio-cleaning" element={<DeckPatioCleaning />} />
+          
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/help" element={<ContactForm />} />
