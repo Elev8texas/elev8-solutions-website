@@ -32,11 +32,11 @@ const HeroSection: React.FC = () => {
       {/* Hero Content */}
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto font-roboto">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-medium text-off-white mb-8 leading-tight font-roboto">
-          Power Washing Near Me | Professional Pressure Washing Services Austin
+          Your Neighborhoods Go-To For Effective Cleaning Solutions
         </h1>
         
         <p className="text-base sm:text-lg lg:text-xl text-light-gray mb-12 max-w-3xl mx-auto leading-relaxed font-roboto">
-          Top-rated pressure washing company offering house power washing, driveway cleaning service, soft wash roof cleaning, and professional pressure washing services near you in Austin, TX
+          Dedicated cleaning professionals driven by a passion for exceptional work
         </p>
 
         {/* CTA Button */}

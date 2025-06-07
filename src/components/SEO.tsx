@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 
 interface SEOProps {
   title: string;
@@ -27,7 +27,7 @@ const SEO: React.FC<SEOProps> = ({
   const fullUrl = canonicalUrl || window.location.href;
 
   // Enhanced local business structured data
-  const localBusinessData = useMemo(() => ({
+  const localBusinessData = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "name": "Elev8 Solutions",
@@ -177,7 +177,7 @@ const SEO: React.FC<SEOProps> = ({
       "https://www.instagram.com/elev8solutions",
       "https://www.linkedin.com/company/elev8solutions"
     ]
-  }), []);
+  };
 
   useEffect(() => {
     // Update document title

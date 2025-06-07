@@ -10,25 +10,25 @@ const ServicesSection: React.FC = () => {
     {
       id: 1,
       title: "Window Washing",
-      description: "Professional window cleaning services that deliver crystal clear, streak-free results for residential and commercial properties.",
+      description: "Crystal clear windows that showcase your property's beauty with professional streak-free cleaning.",
       side: "left"
     },
     {
       id: 2,
-      title: "Power Washing & Pressure Washing",
-      description: "Expert pressure washing services near you - from driveway cleaning service to house power washing and soft wash pressure washing for all exterior surfaces.",
+      title: "Pressure Washing",
+      description: "Powerful cleaning solutions that restore surfaces to their original pristine condition.",
       side: "right"
     },
     {
       id: 3,
-      title: "Roof Cleaning Services",
-      description: "Professional roof cleaning services near me using safe soft wash pressure washing techniques to remove algae, moss, and stains without damage.",
+      title: "Roof & Gutter Cleaning",
+      description: "Comprehensive roof and gutter maintenance to protect your property from water damage.",
       side: "left"
     },
     {
       id: 4,
       title: "Exterior Cleaning",
-      description: "Complete exterior surface cleaning including siding, decks, and outdoor structures using professional power washing equipment.",
+      description: "Complete exterior surface cleaning including siding, decks, and outdoor structures.",
       side: "right"
     }
   ];
@@ -62,10 +62,10 @@ const ServicesSection: React.FC = () => {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl sm:text-5xl font-bold text-text-primary mb-6">
-            Professional <span className="text-gold-500">Pressure Washing Services Near Me</span>
+            Our <span className="text-gold-500">Premium</span> Services
           </h2>
           <p className="text-xl text-text-secondary max-w-3xl mx-auto">
-            Top-rated pressure washing company in Austin TX delivering power washing services, driveway cleaning, and soft wash roof cleaning with exceptional results
+            Delivering exceptional exterior cleaning solutions with unmatched attention to detail
           </p>
         </div>
 

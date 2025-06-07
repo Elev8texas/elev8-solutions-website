@@ -60,45 +60,39 @@ const PressureWashing: React.FC = () => {
   ];
 
   const surfaces = [
-    "Driveways (driveway cleaning service)",
-    "House exteriors (house power washing)", 
-    "Sidewalks and walkways",
-    "Roofs (soft wash pressure washing)",
-    "Patios and decks",
-    "Commercial buildings",
+    "Driveways and sidewalks",
+    "Patios and walkways", 
+    "Building exteriors",
     "Fences and gates",
-    "Pool areas and decks"
+    "Pool areas",
+    "Parking lots"
   ];
 
   const faqs = [
     {
-      question: "Why choose our pressure washing company over others near me?",
-      answer: "As a local pressure washing company, we provide professional power washing services with advanced equipment, eco-friendly solutions, and fully trained technicians. Our pressure washing services near you include free estimates, satisfaction guarantee, and competitive pricing."
+      question: "Is pressure washing safe for all surfaces?",
+      answer: "We adjust pressure levels based on the surface material. Delicate surfaces like wood require lower pressure, while concrete can handle higher pressure. Our trained technicians know the right pressure for each surface type."
     },
     {
-      question: "What's the difference between power washing and soft wash pressure washing?",
-      answer: "Power washing uses high-pressure water for tough surfaces like driveways and concrete. Soft wash pressure washing uses lower pressure with specialized cleaning solutions, perfect for roofs, siding, and delicate surfaces. We use the right technique for each surface."
+      question: "How often should I pressure wash my property?",
+      answer: "We recommend annual pressure washing for most residential properties. High-traffic areas or properties in humid climates may benefit from bi-annual cleaning."
     },
     {
-      question: "Do you offer driveway cleaning service in my area?",
-      answer: "Yes! Our driveway cleaning service covers Austin and surrounding areas including Round Rock, Cedar Park, Georgetown, and more. We specialize in removing oil stains, dirt buildup, and restoring your driveway's appearance."
+      question: "Will pressure washing damage my landscaping?",
+      answer: "We take precautions to protect your plants and landscaping. We cover delicate plants and use eco-friendly cleaning solutions that won't harm your garden."
     },
     {
-      question: "How often should I schedule house power washing services?",
-      answer: "We recommend house power washing annually for most homes, or bi-annually for properties in high-humidity areas or with heavy tree coverage. Regular cleaning maintains your home's appearance and prevents long-term damage."
-    },
-    {
-      question: "Do you provide roof cleaning services near me?",
-      answer: "Absolutely! Our roof cleaning services use safe soft wash pressure washing techniques to remove algae, moss, and stains without damaging your roof. We serve the entire Austin metro area with professional roof cleaning."
+      question: "How long does the cleaning process take?",
+      answer: "Most residential driveways take 1-2 hours, while larger commercial projects may take several hours. We'll provide a time estimate during your consultation."
     }
   ];
 
   return (
     <>
       <SEO
-        title="Power Washing Near Me | Pressure Washing Services Austin TX - Driveway Cleaning"
-        description="Top-rated pressure washing company in Austin TX. Professional power washing services near you - driveway cleaning, house power washing, soft wash roof cleaning. Licensed & insured. Free estimates."
-        keywords="power washing near me Austin, pressure washing services near me, pressure washing company Austin TX, soft wash pressure washing, roof cleaning services near me, driveway cleaning service, house power washing near me Austin"
+        title="Professional Pressure Washing Austin TX - Driveway & Concrete Cleaning Services"
+        description="Expert pressure washing in Austin, Round Rock, Cedar Park & Central Texas. Remove dirt, grime & stains from driveways, sidewalks & exteriors. Eco-friendly solutions. Fully insured. Free estimates."
+        keywords="pressure washing Austin TX, driveway cleaning Austin, concrete cleaning Round Rock, sidewalk pressure washing Cedar Park, commercial pressure washing Georgetown, Austin pressure washing services"
         canonicalUrl="https://elev8texas.com/services/pressure-washing"
         service="Pressure Washing"
         jsonLd={jsonLd}
@@ -111,10 +105,11 @@ const PressureWashing: React.FC = () => {
         <section className="pt-32 pb-16 bg-gradient-to-br from-background-primary via-background-secondary to-background-primary">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-5xl sm:text-6xl font-bold text-text-primary mb-6">
-              Professional <span className="text-gold-500">Power Washing Near Me</span>
+              Professional <span className="text-gold-500">Pressure Washing</span>
             </h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
-              Looking for reliable pressure washing services near you? Our pressure washing company delivers professional power washing services in Austin and surrounding areas. From driveway cleaning service to house power washing and soft wash roof cleaning, we're your local pressure washing experts.
+              High-powered cleaning that removes years of dirt, grime, and stains from exterior surfaces. 
+              Transform your property's appearance with our professional pressure washing services.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button

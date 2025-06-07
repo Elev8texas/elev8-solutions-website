@@ -29,11 +29,10 @@ const RoofCleaning: React.FC = () => {
   return (
     <>
       <SEO
-        title="Roof Cleaning Services Near Me | Soft Wash Pressure Washing Austin TX"
-        description="Professional roof cleaning services near you in Austin TX. Expert soft wash pressure washing to safely remove algae, moss & stains. Top-rated pressure washing company. Free estimates."
-        keywords="roof cleaning services near me Austin, soft wash pressure washing, roof cleaning Austin TX, pressure washing company roof cleaning, algae removal Austin, moss removal roof cleaning"
+        title="Professional Roof Cleaning Austin TX - Soft Wash Roof Services"
+        description="Safe roof cleaning in Austin using soft washing techniques. Remove algae, moss & stains. Extend roof life & improve curb appeal. Fully insured. Free estimates."
+        keywords="roof cleaning Austin, soft wash roof cleaning, algae removal roof, moss removal roof, roof stain removal Austin"
         canonicalUrl="https://elev8texas.com/services/roof-cleaning"
-        service="Roof Cleaning"
         jsonLd={jsonLd}
       />
       
