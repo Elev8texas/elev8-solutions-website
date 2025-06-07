@@ -32,7 +32,6 @@ const SolarPanelCleaning: React.FC = () => {
     "Gentle brush and purified water cleaning",
     "Removal of dirt, pollen, and debris buildup",
     "Inverter and connection point cleaning",
-    "Performance testing and documentation",
     "System restart and efficiency verification",
     "Maintenance schedule recommendations"
   ];
