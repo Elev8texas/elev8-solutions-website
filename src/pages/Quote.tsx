@@ -853,12 +853,30 @@ const Quote: React.FC = () => {
                       <div className="bg-background-secondary border border-border-primary rounded-lg p-6">
                         <h3 className="text-lg font-semibold text-text-primary mb-4">Selected Services</h3>
                         <div className="space-y-3">
+                          {/* Regular Selected Services */}
                           {pricing.selectedServices.map((service) => (
                             <div key={service.id} className="flex justify-between items-center">
                               <span className="text-text-primary">{service.name}</span>
                               <span className="text-gold-500 font-medium">{getServiceDisplayPrice(service)}</span>
                             </div>
                           ))}
+                          
+                          {/* Upsell Services */}
+                          {pricing.upsellServices.length > 0 && (
+                            <>
+                              <hr className="border-border-primary my-2" />
+                              <div className="text-sm font-medium text-green-400 mb-2">Upsell Services (10% discount applied)</div>
+                              {pricing.upsellServices.map((service) => (
+                                <div key={`upsell-${service.id}`} className="flex justify-between items-center">
+                                  <span className="text-text-primary flex items-center">
+                                    {service.name}
+                                    <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">10% OFF</span>
+                                  </span>
+                                  <span className="text-green-400 font-medium">{getServiceDisplayPrice(service)}</span>
+                                </div>
+                              ))}
+                            </>
+                          )}
                         </div>
                       </div>
                       
