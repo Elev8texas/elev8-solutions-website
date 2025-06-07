@@ -28,8 +28,7 @@ const Navigation: React.FC = () => {
     { name: 'Roof Cleaning', path: '/services/roof-cleaning' },
     { name: 'Gutter Cleaning', path: '/services/gutter-cleaning' },
     { name: 'Solar Panel Cleaning', path: '/services/solar-panel-cleaning' },
-    { name: 'Exterior Cleaning', path: '/services/exterior-cleaning' },
-    { name: 'Deck & Patio Cleaning', path: '/services/deck-patio-cleaning' }
+    { name: 'Exterior Cleaning', path: '/services/exterior-cleaning' }
   ];
 
   return (

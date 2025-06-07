@@ -28,7 +28,6 @@ import RoofCleaning from './pages/services/RoofCleaning';
 import GutterCleaning from './pages/services/GutterCleaning';
 import SolarPanelCleaning from './pages/services/SolarPanelCleaning';
 import ExteriorCleaning from './pages/services/ExteriorCleaning';
-import DeckPatioCleaning from './pages/services/DeckPatioCleaning';
 
 function HomePage() {
   return (
@@ -97,7 +96,6 @@ function App() {
           <Route path="/services/gutter-cleaning" element={<GutterCleaning />} />
           <Route path="/services/solar-panel-cleaning" element={<SolarPanelCleaning />} />
           <Route path="/services/exterior-cleaning" element={<ExteriorCleaning />} />
-          <Route path="/services/deck-patio-cleaning" element={<DeckPatioCleaning />} />
           
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
