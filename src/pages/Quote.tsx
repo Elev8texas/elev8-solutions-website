@@ -27,6 +27,12 @@ const Quote: React.FC = () => {
     address: string;
     preferredDate: string;
     preferredTime: string;
+    // Upsell fields
+    upsellServices: string[];
+    upsellSquareFootage: string;
+    upsellWindowCount: string;
+    upsellSolarPanelCount: string;
+    upsellLinearFeet: string;
   }
 
   const [formData, setFormData] = useState<FormData>({
@@ -44,7 +50,13 @@ const Quote: React.FC = () => {
     phone: '',
     address: '',
     preferredDate: '',
-    preferredTime: ''
+    preferredTime: '',
+    // Upsell fields
+    upsellServices: [],
+    upsellSquareFootage: '',
+    upsellWindowCount: '',
+    upsellSolarPanelCount: '',
+    upsellLinearFeet: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,6 +139,10 @@ const Quote: React.FC = () => {
     'Other'
   ];
 
+  // Service bundle definitions
+  const roofBundle = ['roof-cleaning', 'gutter-cleaning', 'solar-panel'];
+  const exteriorBundle = ['window-washing', 'pressure-washing', 'exterior-cleaning', 'deck-patio'];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -156,6 +172,48 @@ const Quote: React.FC = () => {
     }));
   };
 
+  // Detect upsell opportunities
+  const getUpsellOpportunities = () => {
+    const upsells = [];
+    
+    // Check roof bundle upsells
+    const selectedRoofServices = formData.selectedServices.filter(s => roofBundle.includes(s));
+    if (selectedRoofServices.length > 0 && selectedRoofServices.length < roofBundle.length) {
+      const missingRoofServices = roofBundle.filter(s => !formData.selectedServices.includes(s));
+      upsells.push({
+        bundle: 'roof',
+        name: 'Complete Roof & Solar Care Package',
+        description: 'Add remaining roof services for comprehensive care',
+        services: missingRoofServices,
+        discount: 0.10
+      });
+    }
+    
+    // Check exterior bundle upsells
+    const selectedExteriorServices = formData.selectedServices.filter(s => exteriorBundle.includes(s));
+    if (selectedExteriorServices.length > 0 && selectedExteriorServices.length < exteriorBundle.length) {
+      const missingExteriorServices = exteriorBundle.filter(s => !formData.selectedServices.includes(s));
+      upsells.push({
+        bundle: 'exterior',
+        name: 'Complete Exterior Cleaning Package',
+        description: 'Add remaining exterior services for a complete clean',
+        services: missingExteriorServices,
+        discount: 0.10
+      });
+    }
+    
+    return upsells;
+  };
+
+  const handleUpsellToggle = (serviceId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      upsellServices: prev.upsellServices.includes(serviceId)
+        ? prev.upsellServices.filter(s => s !== serviceId)
+        : [...prev.upsellServices, serviceId]
+    }));
+  };
+
   // Check if required fields are filled based on selected services
   const isRequiredFieldsFilled = () => {
     // Property type is always required
@@ -180,75 +238,90 @@ const Quote: React.FC = () => {
   // Calculate pricing based on detailed requirements
   const calculatePricing = () => {
     const selectedServiceObjects = services.filter(s => formData.selectedServices.includes(s.id));
+    const upsellServiceObjects = services.filter(s => formData.upsellServices.includes(s.id));
     let baseTotal = 0;
+    let upsellTotal = 0;
     
     const sqft = parseInt(formData.squareFootage) || 0;
     const windowCount = parseInt(formData.windowCount) || 0;
     const solarPanelCount = parseInt(formData.solarPanelCount) || 0;
     const linearFeet = parseInt(formData.linearFeet) || 0;
     const stories = parseInt(formData.stories) || 1;
-    
-    // Calculate price for each selected service
-    selectedServiceObjects.forEach(service => {
+
+    // Upsell dimensions
+    const upsellSqft = parseInt(formData.upsellSquareFootage) || 0;
+    const upsellWindowCount = parseInt(formData.upsellWindowCount) || 0;
+    const upsellSolarPanelCount = parseInt(formData.upsellSolarPanelCount) || 0;
+    const upsellLinearFeet = parseInt(formData.upsellLinearFeet) || 0;
+
+    // Helper function to calculate service price
+    const calculateServicePrice = (service: any, isUpsell: boolean = false) => {
+      const currentSqft = isUpsell ? upsellSqft : sqft;
+      const currentWindowCount = isUpsell ? upsellWindowCount : windowCount;
+      const currentSolarPanelCount = isUpsell ? upsellSolarPanelCount : solarPanelCount;
+      const currentLinearFeet = isUpsell ? upsellLinearFeet : linearFeet;
+
       switch (service.id) {
         case 'window-washing':
-          // $6-10 per window based on floor (1st floor = $6, ascending floors = $10)
-          const firstFloorWindows = Math.min(windowCount, Math.ceil(windowCount / stories));
-          const upperFloorWindows = windowCount - firstFloorWindows;
-          baseTotal += (firstFloorWindows * 6) + (upperFloorWindows * 10);
-          break;
+          const firstFloorWindows = Math.min(currentWindowCount, Math.ceil(currentWindowCount / stories));
+          const upperFloorWindows = currentWindowCount - firstFloorWindows;
+          return (firstFloorWindows * 6) + (upperFloorWindows * 10);
           
         case 'pressure-washing':
         case 'driveway-cleaning':
-          // Pressure washing: $0.55/sqft (<600), $0.50/sqft (600-1000), $0.45/sqft (>1000)
-          if (sqft < 600) {
-            baseTotal += sqft * 0.55;
-          } else if (sqft <= 1000) {
-            baseTotal += sqft * 0.50;
+          if (currentSqft < 600) {
+            return currentSqft * 0.55;
+          } else if (currentSqft <= 1000) {
+            return currentSqft * 0.50;
           } else {
-            baseTotal += sqft * 0.45;
+            return currentSqft * 0.45;
           }
-          break;
           
         case 'roof-cleaning':
         case 'exterior-cleaning':
         case 'deck-patio':
-          // Soft washing: $0.55/sqft (<2000), $0.50/sqft (2000-3999), $0.45/sqft (>4000)
-          if (sqft < 2000) {
-            baseTotal += sqft * 0.55;
-          } else if (sqft <= 3999) {
-            baseTotal += sqft * 0.50;
+          if (currentSqft < 2000) {
+            return currentSqft * 0.55;
+          } else if (currentSqft <= 3999) {
+            return currentSqft * 0.50;
           } else {
-            baseTotal += sqft * 0.45;
+            return currentSqft * 0.45;
           }
-          break;
           
         case 'solar-panel':
-          // $15 per panel
-          baseTotal += solarPanelCount * 15;
-          break;
+          return currentSolarPanelCount * 15;
           
         case 'gutter-cleaning':
-          // Pricing based on stories: $1.25/ft (1 story), $2.00/ft (2 story), $2.50/ft (3+ story)
-          let pricePerFoot = 1.25; // Default for single story
+          let pricePerFoot = 1.25;
           if (stories === 2) {
             pricePerFoot = 2.00;
           } else if (stories >= 3) {
             pricePerFoot = 2.50;
           }
-          baseTotal += linearFeet * pricePerFoot;
-          break;
+          return currentLinearFeet * pricePerFoot;
           
         default:
-          baseTotal += service.basePrice;
+          return service.basePrice;
       }
+    };
+    
+    // Calculate price for each selected service
+    selectedServiceObjects.forEach(service => {
+      baseTotal += calculateServicePrice(service, false);
+    });
+
+    // Calculate price for each upsell service (with 10% discount)
+    upsellServiceObjects.forEach(service => {
+      const servicePrice = calculateServicePrice(service, true);
+      upsellTotal += servicePrice * 0.9; // 10% discount
     });
     
-    const adjustedTotal = baseTotal;
+    const combinedTotal = baseTotal + upsellTotal;
     
     // Multi-service discount (10% for 2+ services)
-    const multiServiceDiscount = formData.selectedServices.length >= 2 ? 0.10 : 0;
-    const afterMultiServiceDiscount = adjustedTotal * (1 - multiServiceDiscount);
+    const totalServicesCount = formData.selectedServices.length + formData.upsellServices.length;
+    const multiServiceDiscount = totalServicesCount >= 2 ? 0.10 : 0;
+    const afterMultiServiceDiscount = combinedTotal * (1 - multiServiceDiscount);
     
     // Recurring service discount
     let recurringDiscount = 0;
@@ -266,12 +339,14 @@ const Quote: React.FC = () => {
     
     return {
       baseTotal,
-      adjustedTotal,
-      multiServiceDiscount: adjustedTotal * multiServiceDiscount,
+      upsellTotal,
+      combinedTotal,
+      multiServiceDiscount: combinedTotal * multiServiceDiscount,
       recurringDiscount: afterMultiServiceDiscount * recurringDiscount,
       finalTotal: adjustedFinalTotal,
       priceRangeHigh,
       selectedServices: selectedServiceObjects,
+      upsellServices: upsellServiceObjects,
       isMinimumApplied: finalTotal < minimumCharge
     };
   };
@@ -327,15 +402,19 @@ const Quote: React.FC = () => {
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        services: formData.selectedServices,
+        services: [...formData.selectedServices, ...formData.upsellServices],
         propertyType: formData.propertyType,
         ...(formData.squareFootage && { squareFootage: parseInt(formData.squareFootage) }),
         ...(formData.windowCount && { windowCount: parseInt(formData.windowCount) }),
         ...(formData.solarPanelCount && { solarPanelCount: parseInt(formData.solarPanelCount) }),
         ...(formData.linearFeet && { linearFeet: parseInt(formData.linearFeet) }),
+        ...(formData.upsellSquareFootage && { upsellSquareFootage: parseInt(formData.upsellSquareFootage) }),
+        ...(formData.upsellWindowCount && { upsellWindowCount: parseInt(formData.upsellWindowCount) }),
+        ...(formData.upsellSolarPanelCount && { upsellSolarPanelCount: parseInt(formData.upsellSolarPanelCount) }),
+        ...(formData.upsellLinearFeet && { upsellLinearFeet: parseInt(formData.upsellLinearFeet) }),
         stories: formData.stories,
         recurringService: formData.recurringService,
-        additionalDetails: `${formData.additionalDetails}\n\nQuote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Total: $${pricing.finalTotal.toFixed(2)}`
+        additionalDetails: `${formData.additionalDetails}\n\nQuote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Main Services: ${formData.selectedServices.join(', ')}\n- Upsell Services: ${formData.upsellServices.join(', ')}\n- Total: $${pricing.finalTotal.toFixed(2)}`
       };
 
       // Save quote request to Firebase
@@ -391,7 +470,12 @@ const Quote: React.FC = () => {
         phone: '',
         address: '',
         preferredDate: '',
-        preferredTime: ''
+        preferredTime: '',
+        upsellServices: [],
+        upsellSquareFootage: '',
+        upsellWindowCount: '',
+        upsellSolarPanelCount: '',
+        upsellLinearFeet: ''
       });
       setCurrentStep(1);
 
@@ -786,6 +870,12 @@ const Quote: React.FC = () => {
                             <span className="text-text-secondary">Base Total</span>
                             <span className="text-text-primary">${pricing.baseTotal.toFixed(2)}</span>
                           </div>
+                          {pricing.upsellTotal > 0 && (
+                            <div className="flex justify-between text-green-400">
+                              <span>Upsell Services (10% off)</span>
+                              <span>${pricing.upsellTotal.toFixed(2)}</span>
+                            </div>
+                          )}
                           {pricing.multiServiceDiscount > 0 && (
                             <div className="flex justify-between text-green-400">
                               <span>Multi-Service Discount (10%)</span>
@@ -865,6 +955,150 @@ const Quote: React.FC = () => {
                           </label>
                         </div>
                       </div>
+
+                      {/* Upsell Opportunities */}
+                      {(() => {
+                        const upsells = getUpsellOpportunities();
+                        return upsells.length > 0 && (
+                          <div className="bg-gradient-to-r from-gold-500/10 to-gold-400/10 border border-gold-500/30 rounded-lg p-6">
+                            <div className="flex items-center space-x-3 mb-4">
+                              <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-bold text-sm">💡</span>
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-semibold text-gold-600">
+                                  Complete Your Service Package
+                                </h3>
+                                <p className="text-sm text-text-secondary">
+                                  Add these complementary services and save 10%!
+                                </p>
+                              </div>
+                            </div>
+
+                            {upsells.map((upsell) => (
+                              <div key={upsell.bundle} className="mb-6 last:mb-0">
+                                <h4 className="font-semibold text-text-primary mb-3">{upsell.name}</h4>
+                                <p className="text-sm text-text-secondary mb-4">{upsell.description}</p>
+                                
+                                <div className="space-y-4">
+                                  {upsell.services.map((serviceId) => {
+                                    const service = services.find(s => s.id === serviceId);
+                                    if (!service) return null;
+
+                                    return (
+                                      <div key={serviceId} className="border border-border-primary rounded-lg p-4 bg-background-primary">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <label className="flex items-center space-x-3 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              checked={formData.upsellServices.includes(serviceId)}
+                                              onChange={() => handleUpsellToggle(serviceId)}
+                                              className="w-4 h-4 text-gold-500 rounded"
+                                            />
+                                            <div>
+                                              <span className="font-medium text-text-primary">{service.name}</span>
+                                              <div className="text-sm text-text-secondary">{service.description}</div>
+                                            </div>
+                                          </label>
+                                          <div className="text-right">
+                                            <div className="text-lg font-bold text-green-400">
+                                              {getServiceDisplayPrice(service)} <span className="text-sm">(10% off)</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Dimension inputs for selected upsell services */}
+                                        {formData.upsellServices.includes(serviceId) && (
+                                          <div className="border-t border-border-primary pt-3 mt-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                              
+                                              {/* Square footage for services that need it */}
+                                              {['pressure-washing', 'roof-cleaning', 'exterior-cleaning', 'deck-patio', 'driveway-cleaning'].includes(serviceId) && (
+                                                <div>
+                                                  <label htmlFor={`upsell-sqft-${serviceId}`} className="block text-sm font-medium text-text-primary mb-2">
+                                                    Square Footage *
+                                                  </label>
+                                                  <input
+                                                    type="number"
+                                                    id={`upsell-sqft-${serviceId}`}
+                                                    name="upsellSquareFootage"
+                                                    value={formData.upsellSquareFootage}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary text-sm"
+                                                    placeholder="e.g. 2000"
+                                                    min="1"
+                                                  />
+                                                </div>
+                                              )}
+
+                                              {/* Window count for window washing */}
+                                              {serviceId === 'window-washing' && (
+                                                <div>
+                                                  <label htmlFor={`upsell-windows-${serviceId}`} className="block text-sm font-medium text-text-primary mb-2">
+                                                    Number of Windows *
+                                                  </label>
+                                                  <input
+                                                    type="number"
+                                                    id={`upsell-windows-${serviceId}`}
+                                                    name="upsellWindowCount"
+                                                    value={formData.upsellWindowCount}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary text-sm"
+                                                    placeholder="e.g. 20"
+                                                    min="1"
+                                                  />
+                                                </div>
+                                              )}
+
+                                              {/* Solar panel count for solar cleaning */}
+                                              {serviceId === 'solar-panel' && (
+                                                <div>
+                                                  <label htmlFor={`upsell-solar-${serviceId}`} className="block text-sm font-medium text-text-primary mb-2">
+                                                    Number of Solar Panels *
+                                                  </label>
+                                                  <input
+                                                    type="number"
+                                                    id={`upsell-solar-${serviceId}`}
+                                                    name="upsellSolarPanelCount"
+                                                    value={formData.upsellSolarPanelCount}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary text-sm"
+                                                    placeholder="e.g. 20"
+                                                    min="1"
+                                                  />
+                                                </div>
+                                              )}
+
+                                              {/* Linear feet for gutter cleaning */}
+                                              {serviceId === 'gutter-cleaning' && (
+                                                <div>
+                                                  <label htmlFor={`upsell-gutters-${serviceId}`} className="block text-sm font-medium text-text-primary mb-2">
+                                                    Linear Feet of Gutters *
+                                                  </label>
+                                                  <input
+                                                    type="number"
+                                                    id={`upsell-gutters-${serviceId}`}
+                                                    name="upsellLinearFeet"
+                                                    value={formData.upsellLinearFeet}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-background-secondary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary text-sm"
+                                                    placeholder="e.g. 150"
+                                                    min="1"
+                                                  />
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })()}

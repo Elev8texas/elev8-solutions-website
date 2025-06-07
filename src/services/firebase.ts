@@ -50,6 +50,10 @@ export interface QuoteFormData {
   windowCount?: number;
   solarPanelCount?: number;
   linearFeet?: number;
+  upsellSquareFootage?: number;
+  upsellWindowCount?: number;
+  upsellSolarPanelCount?: number;
+  upsellLinearFeet?: number;
   stories?: string;
   recurringService?: string;
   additionalDetails?: string;
@@ -188,6 +192,10 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
       ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
       ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
       ...(formData.linearFeet !== undefined && formData.linearFeet !== null && { linearFeet: formData.linearFeet }),
+      ...(formData.upsellSquareFootage !== undefined && formData.upsellSquareFootage !== null && { upsellSquareFootage: formData.upsellSquareFootage }),
+      ...(formData.upsellWindowCount !== undefined && formData.upsellWindowCount !== null && { upsellWindowCount: formData.upsellWindowCount }),
+      ...(formData.upsellSolarPanelCount !== undefined && formData.upsellSolarPanelCount !== null && { upsellSolarPanelCount: formData.upsellSolarPanelCount }),
+      ...(formData.upsellLinearFeet !== undefined && formData.upsellLinearFeet !== null && { upsellLinearFeet: formData.upsellLinearFeet }),
       ...(formData.stories && { stories: formData.stories }),
       ...(formData.recurringService && { recurringService: formData.recurringService }),
       ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
@@ -219,6 +227,10 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
         ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
         ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
         ...(formData.linearFeet !== undefined && formData.linearFeet !== null && { linearFeet: formData.linearFeet }),
+        ...(formData.upsellSquareFootage !== undefined && formData.upsellSquareFootage !== null && { upsellSquareFootage: formData.upsellSquareFootage }),
+        ...(formData.upsellWindowCount !== undefined && formData.upsellWindowCount !== null && { upsellWindowCount: formData.upsellWindowCount }),
+        ...(formData.upsellSolarPanelCount !== undefined && formData.upsellSolarPanelCount !== null && { upsellSolarPanelCount: formData.upsellSolarPanelCount }),
+        ...(formData.upsellLinearFeet !== undefined && formData.upsellLinearFeet !== null && { upsellLinearFeet: formData.upsellLinearFeet }),
         ...(formData.stories && { stories: formData.stories }),
         ...(formData.recurringService && { recurringService: formData.recurringService }),
         ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
