@@ -310,112 +310,92 @@ const Contact: React.FC = () => {
 
             {/* Contact Information */}
             <div className="space-y-8">
-              
-              {/* Contact Details */}
               <div className="bg-background-card border border-border-primary rounded-2xl p-8 shadow-luxe">
-                <h3 className="text-2xl font-bold text-text-primary mb-6">
+                <h2 className="text-3xl font-bold text-text-primary mb-6">
                   Contact <span className="text-gold-500">Information</span>
-                </h3>
+                </h2>
                 
                 <div className="space-y-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gold-gradient rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-background-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-text-primary">Phone</h4>
+                      <h3 className="text-lg font-semibold text-text-primary mb-1">Phone</h3>
                       <p className="text-text-secondary">(512) 701-8085</p>
-                      <p className="text-sm text-text-muted">Available 7 days a week</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gold-gradient rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <div className="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-background-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-text-primary">Email</h4>
-                      <p className="text-text-secondary">Contact@elev8texas.com</p>
-                      <p className="text-sm text-text-muted">We respond within 24 hours</p>
+                      <h3 className="text-lg font-semibold text-text-primary mb-1">Email</h3>
+                      <p className="text-text-secondary">info@elev8texas.com</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 bg-gold-gradient rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-background-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-text-primary">Service Area</h4>
-                      <p className="text-text-secondary">Austin, Texas & Surrounding Areas</p>
-                      <p className="text-sm text-text-muted">25 mile radius of Austin</p>
+                      <h3 className="text-lg font-semibold text-text-primary mb-1">Service Area</h3>
+                      <p className="text-text-secondary">
+                        Austin Metro Area<br />
+                        Austin, Round Rock, Cedar Park, Georgetown,<br />
+                        Pflugerville, Lakeway, Westlake, Leander
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-background-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-text-primary mb-1">Business Hours</h3>
+                      <p className="text-text-secondary">
+                        Monday - Saturday: 7:00 AM - 7:00 PM<br />
+                        Sunday: Closed<br />
+                        <span className="text-gold-500 font-medium">24/7 Emergency Services Available</span>
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Business Hours */}
+              {/* Google Maps */}
               <div className="bg-background-card border border-border-primary rounded-2xl p-8 shadow-luxe">
                 <h3 className="text-2xl font-bold text-text-primary mb-6">
-                  Business <span className="text-gold-500">Hours</span>
+                  Our <span className="text-gold-500">Service Area</span>
                 </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-border-primary">
-                    <span className="text-text-primary font-medium">Monday - Friday</span>
-                    <span className="text-text-secondary">7:00 AM - 6:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border-primary">
-                    <span className="text-text-primary font-medium">Saturday</span>
-                    <span className="text-text-secondary">8:00 AM - 4:00 PM</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-text-primary font-medium">Sunday</span>
-                    <span className="text-text-secondary">Emergency Only</span>
-                  </div>
+                <div className="rounded-lg overflow-hidden shadow-lg">
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d220893.51736096392!2d-97.9383085!3d30.2671546!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8644b599a0cc032f%3A0x5d9b464bd469d57a!2sAustin%2C%20TX%2C%20USA!5e0!3m2!1sen!2sus!4v1701234567890!5m2!1sen!2sus"
+                    width="100%"
+                    height="300"
+                    style={{ border: 0 }}
+                    allowFullScreen={true}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Elev8 Solutions Service Area - Austin, Texas"
+                  ></iframe>
                 </div>
-                
-                <div className="mt-6 p-4 bg-gold-500/10 border border-gold-500/20 rounded-lg">
-                  <p className="text-sm text-text-secondary">
-                    <span className="text-gold-500 font-semibold">Emergency Services:</span> Available 24/7 for urgent cleaning needs
-                  </p>
-                </div>
-              </div>
-
-              {/* Why Choose Us */}
-              <div className="bg-background-card border border-border-primary rounded-2xl p-8 shadow-luxe">
-                <h3 className="text-2xl font-bold text-text-primary mb-6">
-                  Why Choose <span className="text-gold-500">Elev8?</span>
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full"></div>
-                    <span className="text-text-secondary">Free, no-obligation estimates</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full"></div>
-                    <span className="text-text-secondary">Fully licensed and insured</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full"></div>
-                    <span className="text-text-secondary">100% satisfaction guarantee</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full"></div>
-                    <span className="text-text-secondary">Eco-friendly cleaning solutions</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full"></div>
-                    <span className="text-text-secondary">Professional, trained technicians</span>
-                  </div>
-                </div>
+                <p className="text-text-muted mt-4 text-sm">
+                  We proudly serve Austin and surrounding communities within a 50-mile radius. 
+                  Contact us to confirm service availability in your specific area.
+                </p>
               </div>
             </div>
           </div>

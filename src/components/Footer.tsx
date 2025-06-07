@@ -24,7 +24,7 @@ const Footer: React.FC = () => {
               </div>
             </div>
             <p className="text-text-secondary mb-6 leading-relaxed">
-              Your neighborhood's go-to for effective cleaning solutions. Dedicated professionals driven by a passion for exceptional work.
+              Professional pressure washing and cleaning services in Austin, Texas. Trusted by homeowners and businesses throughout the Greater Austin Metro Area for exceptional results and reliable service.
             </p>
             
             {/* Social Media Links */}
@@ -164,8 +164,8 @@ const Footer: React.FC = () => {
                 </svg>
                 <div>
                   <p className="text-text-secondary">Email</p>
-                  <a href="mailto:contact@elev8texas.com" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
-                    contact@elev8texas.com
+                  <a href="mailto:info@elev8texas.com" className="text-text-primary hover:text-gold-500 transition-colors duration-300 font-medium">
+                    info@elev8texas.com
                   </a>
                 </div>
               </div>
@@ -177,9 +177,11 @@ const Footer: React.FC = () => {
                 </svg>
                 <div>
                   <p className="text-text-secondary">Service Area</p>
-                  <p className="text-text-primary font-medium">
-                    Greater Austin Area
-                  </p>
+                  <div className="text-text-primary font-medium text-sm">
+                    <p>Austin • Round Rock • Cedar Park</p>
+                    <p>Georgetown • Pflugerville</p>
+                    <p>Lakeway • Westlake • Leander</p>
+                  </div>
                 </div>
               </div>
 
@@ -189,10 +191,10 @@ const Footer: React.FC = () => {
                 </svg>
                 <div>
                   <p className="text-text-secondary">Business Hours</p>
-                  <div className="text-text-primary font-medium">
-                    <p>Mon - Fri: 7:00 AM - 6:00 PM</p>
-                    <p>Sat: 8:00 AM - 4:00 PM</p>
-                    <p>Sun: Closed</p>
+                  <div className="text-text-primary font-medium text-sm">
+                    <p>Mon - Sat: 7:00 AM - 7:00 PM</p>
+                    <p>Sunday: Closed</p>
+                    <p className="text-gold-500">24/7 Emergency Available</p>
                   </div>
                 </div>
               </div>

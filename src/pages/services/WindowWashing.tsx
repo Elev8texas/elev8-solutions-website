@@ -83,9 +83,10 @@ const WindowWashing: React.FC = () => {
     <>
       <SEO
         title="Professional Window Washing Austin TX - Streak-Free Window Cleaning Services"
-        description="Crystal clear window cleaning in Austin. Professional, eco-friendly window washing with streak-free results. Residential & commercial. Fully insured. Free estimates."
-        keywords="window cleaning Austin, professional window washing, streak-free windows, residential window cleaning Austin, commercial window cleaning"
+        description="Crystal clear window cleaning in Austin, Round Rock, Cedar Park & surrounding Texas areas. Professional, eco-friendly window washing with streak-free results. Residential & commercial. Fully insured. Free estimates."
+        keywords="window cleaning Austin TX, professional window washing Austin, streak-free windows Round Rock, residential window cleaning Cedar Park, commercial window cleaning Georgetown, window washing Lakeway, Westlake window cleaning"
         canonicalUrl="https://elev8texas.com/services/window-washing"
+        service="Window Cleaning"
         jsonLd={jsonLd}
       />
       
@@ -100,7 +101,7 @@ const WindowWashing: React.FC = () => {
             </h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto mb-8">
               Crystal clear windows that enhance your property's appearance and let natural light shine through. 
-              We use a double osmosis process that eliminates watermarks and window streaks for a perfect finish every time.
+              Serving Austin, Round Rock, Cedar Park, Georgetown, and surrounding Central Texas areas with our double osmosis process that eliminates watermarks and window streaks for a perfect finish every time.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button

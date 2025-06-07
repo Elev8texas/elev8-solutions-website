@@ -91,9 +91,10 @@ const PressureWashing: React.FC = () => {
     <>
       <SEO
         title="Professional Pressure Washing Austin TX - Driveway & Concrete Cleaning Services"
-        description="Expert pressure washing in Austin. Remove dirt, grime & stains from driveways, sidewalks & exteriors. Eco-friendly solutions. Fully insured. Free estimates."
-        keywords="pressure washing Austin, driveway cleaning Austin, concrete cleaning, sidewalk pressure washing, commercial pressure washing Austin"
+        description="Expert pressure washing in Austin, Round Rock, Cedar Park & Central Texas. Remove dirt, grime & stains from driveways, sidewalks & exteriors. Eco-friendly solutions. Fully insured. Free estimates."
+        keywords="pressure washing Austin TX, driveway cleaning Austin, concrete cleaning Round Rock, sidewalk pressure washing Cedar Park, commercial pressure washing Georgetown, Austin pressure washing services"
         canonicalUrl="https://elev8texas.com/services/pressure-washing"
+        service="Pressure Washing"
         jsonLd={jsonLd}
       />
       

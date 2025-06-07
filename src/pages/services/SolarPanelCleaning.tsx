@@ -85,9 +85,10 @@ const SolarPanelCleaning: React.FC = () => {
     <>
       <SEO
         title="Professional Solar Panel Cleaning Austin TX - Solar Maintenance Services"
-        description="Expert solar panel cleaning in Austin. Maximize energy efficiency with professional solar panel maintenance. Safe cleaning methods. Fully insured. Free estimates."
-        keywords="solar panel cleaning Austin, solar panel maintenance Austin, solar efficiency cleaning, residential solar cleaning"
+        description="Expert solar panel cleaning in Austin, Round Rock, Cedar Park & Central Texas. Maximize energy efficiency with professional solar panel maintenance. Safe cleaning methods. Fully insured. Free estimates."
+        keywords="solar panel cleaning Austin TX, solar panel maintenance Austin, solar efficiency cleaning Round Rock, residential solar cleaning Cedar Park, solar panel washing Georgetown, Austin solar services"
         canonicalUrl="https://elev8texas.com/services/solar-panel-cleaning"
+        service="Solar Panel Cleaning"
         jsonLd={jsonLd}
       />
       
