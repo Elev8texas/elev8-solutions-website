@@ -11,22 +11,34 @@ import { analytics } from '../utils/analytics';
 
 const Quote: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    // Step 1: Service Selection
-    selectedServices: [] as string[],
-    
-    // Step 2: Project Dimensions
+  interface FormData {
+    selectedServices: string[];
+    squareFootage: string;
+    windowCount: string;
+    solarPanelCount: string;
+    linearFeet: string;
+    stories: string;
+    propertyType: string;
+    additionalDetails: string;
+    recurringService: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    preferredDate: string;
+    preferredTime: string;
+  }
+
+  const [formData, setFormData] = useState<FormData>({
+    selectedServices: [],
     squareFootage: '',
     windowCount: '',
     solarPanelCount: '',
+    linearFeet: '',
     stories: '1',
     propertyType: '',
     additionalDetails: '',
-    
-    // Step 3: Quote Review
-    recurringService: 'none', // 'none', 'biannual', 'quarterly'
-    
-    // Step 4: Contact & Booking
+    recurringService: 'none',
     name: '',
     email: '',
     phone: '',
@@ -69,8 +81,9 @@ const Quote: React.FC = () => {
       id: 'gutter-cleaning',
       name: 'Gutter Cleaning',
       description: 'Complete gutter cleaning and maintenance service',
-      basePrice: 150, // Base price for gutter cleaning
-      priceUnit: 'per service'
+      basePrice: 0, // Calculated based on linear feet and stories
+      priceUnit: 'per linear foot',
+      requiresLinearFeet: true
     },
     {
       id: 'solar-panel',
@@ -154,10 +167,12 @@ const Quote: React.FC = () => {
     );
     const needsWindowCount = formData.selectedServices.includes('window-washing');
     const needsSolarPanelCount = formData.selectedServices.includes('solar-panel');
+    const needsLinearFeet = formData.selectedServices.includes('gutter-cleaning');
     
     if (needsSquareFootage && !formData.squareFootage) return false;
     if (needsWindowCount && !formData.windowCount) return false;
     if (needsSolarPanelCount && !formData.solarPanelCount) return false;
+    if (needsLinearFeet && !formData.linearFeet) return false;
     
     return true;
   };
@@ -170,6 +185,7 @@ const Quote: React.FC = () => {
     const sqft = parseInt(formData.squareFootage) || 0;
     const windowCount = parseInt(formData.windowCount) || 0;
     const solarPanelCount = parseInt(formData.solarPanelCount) || 0;
+    const linearFeet = parseInt(formData.linearFeet) || 0;
     const stories = parseInt(formData.stories) || 1;
     
     // Calculate price for each selected service
@@ -213,8 +229,14 @@ const Quote: React.FC = () => {
           break;
           
         case 'gutter-cleaning':
-          // Fixed price
-          baseTotal += service.basePrice;
+          // Pricing based on stories: $1.25/ft (1 story), $2.00/ft (2 story), $2.50/ft (3+ story)
+          let pricePerFoot = 1.25; // Default for single story
+          if (stories === 2) {
+            pricePerFoot = 2.00;
+          } else if (stories >= 3) {
+            pricePerFoot = 2.50;
+          }
+          baseTotal += linearFeet * pricePerFoot;
           break;
           
         default:
@@ -269,7 +291,7 @@ const Quote: React.FC = () => {
       case 'solar-panel':
         return '$15';
       case 'gutter-cleaning':
-        return '$150';
+        return '$1.25-2.50';
       default:
         return 'Quote';
     }
@@ -310,6 +332,7 @@ const Quote: React.FC = () => {
         ...(formData.squareFootage && { squareFootage: parseInt(formData.squareFootage) }),
         ...(formData.windowCount && { windowCount: parseInt(formData.windowCount) }),
         ...(formData.solarPanelCount && { solarPanelCount: parseInt(formData.solarPanelCount) }),
+        ...(formData.linearFeet && { linearFeet: parseInt(formData.linearFeet) }),
         stories: formData.stories,
         recurringService: formData.recurringService,
         additionalDetails: `${formData.additionalDetails}\n\nQuote Details:\n- Stories: ${formData.stories}\n- Recurring: ${formData.recurringService}\n- Total: $${pricing.finalTotal.toFixed(2)}`
@@ -358,6 +381,7 @@ const Quote: React.FC = () => {
         squareFootage: '',
         windowCount: '',
         solarPanelCount: '',
+        linearFeet: '',
         stories: '1',
         propertyType: '',
         additionalDetails: '',
@@ -568,13 +592,34 @@ const Quote: React.FC = () => {
                 {/* Only show fields needed for selected services */}
                 <div className="space-y-6">
                   
+                  {/* Linear Feet - Required for gutter cleaning */}
+                  {formData.selectedServices.includes('gutter-cleaning') && (
+                    <div className="bg-background-card border border-border-primary rounded-xl p-6">
+                      <label htmlFor="linearFeet" className="block text-sm font-medium text-text-primary mb-2">
+                        Linear Feet of Gutters *
+                      </label>
+                      <input
+                        type="number"
+                        id="linearFeet"
+                        name="linearFeet"
+                        value={formData.linearFeet}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary"
+                        placeholder="e.g. 150"
+                        min="1"
+                        required
+                      />
+                      <p className="text-sm text-text-secondary mt-2">
+                        Total linear feet of gutters around your home
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Square Footage - Required for most services */}
-                  {(formData.selectedServices.includes('pressure-washing') || 
-                    formData.selectedServices.includes('roof-cleaning') || 
-                    formData.selectedServices.includes('exterior-cleaning') || 
-                    formData.selectedServices.includes('deck-patio') || 
-                    formData.selectedServices.includes('driveway-cleaning')) && (
-                    <div>
+                  {formData.selectedServices.some(service => 
+                    ['pressure-washing', 'roof-cleaning', 'exterior-cleaning', 'deck-patio', 'driveway-cleaning'].includes(service)
+                  ) && (
+                    <div className="bg-background-card border border-border-primary rounded-xl p-6">
                       <label htmlFor="squareFootage" className="block text-sm font-medium text-text-primary mb-2">
                         Square Footage *
                       </label>
@@ -584,11 +629,12 @@ const Quote: React.FC = () => {
                         name="squareFootage"
                         value={formData.squareFootage}
                         onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary"
+                        placeholder="e.g. 2000"
+                        min="1"
                         required
-                        className="w-full px-4 py-3 bg-background-primary border border-border-primary rounded-lg focus:ring-2 focus:ring-gold-500 focus:border-transparent text-text-primary placeholder-text-muted transition-all duration-300"
-                        placeholder="e.g., 2500"
                       />
-                      <p className="text-xs text-text-muted mt-1">
+                      <p className="text-sm text-text-secondary mt-2">
                         Area to be cleaned in square feet
                       </p>
                     </div>

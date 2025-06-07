@@ -49,6 +49,7 @@ export interface QuoteFormData {
   squareFootage?: number;
   windowCount?: number;
   solarPanelCount?: number;
+  linearFeet?: number;
   stories?: string;
   recurringService?: string;
   additionalDetails?: string;
@@ -186,6 +187,7 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
       ...(formData.squareFootage !== undefined && formData.squareFootage !== null && { squareFootage: formData.squareFootage }),
       ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
       ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
+      ...(formData.linearFeet !== undefined && formData.linearFeet !== null && { linearFeet: formData.linearFeet }),
       ...(formData.stories && { stories: formData.stories }),
       ...(formData.recurringService && { recurringService: formData.recurringService }),
       ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
@@ -216,6 +218,7 @@ export const saveQuoteRequest = async (formData: QuoteFormData) => {
         ...(formData.squareFootage !== undefined && formData.squareFootage !== null && { squareFootage: formData.squareFootage }),
         ...(formData.windowCount !== undefined && formData.windowCount !== null && { windowCount: formData.windowCount }),
         ...(formData.solarPanelCount !== undefined && formData.solarPanelCount !== null && { solarPanelCount: formData.solarPanelCount }),
+        ...(formData.linearFeet !== undefined && formData.linearFeet !== null && { linearFeet: formData.linearFeet }),
         ...(formData.stories && { stories: formData.stories }),
         ...(formData.recurringService && { recurringService: formData.recurringService }),
         ...(formData.additionalDetails && { additionalDetails: formData.additionalDetails })
