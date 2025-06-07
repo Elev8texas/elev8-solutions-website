@@ -20,6 +20,7 @@ import Footer from './components/Footer';
 import StickyHelpButton from './components/StickyHelpButton';
 import NewsletterPopup from './components/NewsletterPopup';
 import ScrollToTop from './components/ScrollToTop';
+import SEO from './components/SEO';
 
 // Import individual service pages
 import WindowWashing from './pages/services/WindowWashing';
@@ -32,6 +33,13 @@ import ExteriorCleaning from './pages/services/ExteriorCleaning';
 function HomePage() {
   return (
     <>
+      <SEO
+        title="Power Washing Near Me | Pressure Washing Services Austin TX - #1 Pressure Washing Company"
+        description="Top-rated pressure washing company in Austin TX. Professional power washing services near you - driveway cleaning service, house power washing, soft wash roof cleaning services. Licensed & insured. Free estimates."
+        keywords="power washing near me Austin, pressure washing services near me, pressure washing company Austin TX, driveway cleaning service, house power washing near me, soft wash pressure washing, roof cleaning services near me"
+        canonicalUrl="https://elev8texas.com/"
+        service="Pressure Washing Services"
+      />
       <HeroSection />
       <ServicesSection />
       <BundleSection />

@@ -103,10 +103,11 @@ const Services: React.FC = () => {
   return (
     <>
       <SEO
-        title="Professional Cleaning Services Austin TX - Pressure Washing, Window & Solar Panel Cleaning"
-        description="Complete cleaning services in Austin: pressure washing, window cleaning, solar panel cleaning, roof cleaning. Professional, eco-friendly, fully insured. Serving Westlake, Lakeway, Round Rock."
-        keywords="pressure washing services Austin, professional window cleaning Austin, solar panel cleaning Texas, roof cleaning Austin, exterior cleaning services, commercial cleaning Austin"
+        title="Pressure Washing Services Near Me | Power Washing Company Austin TX"
+        description="Professional pressure washing services near you in Austin TX. Top-rated pressure washing company offering power washing, driveway cleaning service, house power washing, soft wash roof cleaning. Licensed & insured."
+        keywords="pressure washing services near me Austin, power washing near me, pressure washing company Austin TX, driveway cleaning service, house power washing near me, soft wash pressure washing, roof cleaning services near me"
         canonicalUrl="https://elev8texas.com/services"
+        service="Pressure Washing Services"
         jsonLd={servicesJsonLd}
       />
       <div className="min-h-screen bg-background-primary">
@@ -116,11 +117,10 @@ const Services: React.FC = () => {
         <section className="pt-24 pb-16 bg-background-primary">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-text-primary mb-6">
-              Our <span className="text-gold-500">Professional</span> Process
+              Professional <span className="text-gold-500">Pressure Washing Services Near Me</span>
             </h1>
             <p className="text-xl text-text-secondary max-w-3xl mx-auto leading-relaxed">
-              Discover how our systematic approach and attention to detail delivers exceptional results for every project. 
-              We don't just clean – we restore and protect your property with proven methods.
+              Top-rated pressure washing company in Austin TX offering power washing services, driveway cleaning service, house power washing, and soft wash roof cleaning. Professional, licensed, and fully insured cleaning experts near you.
             </p>
           </div>
         </section>
